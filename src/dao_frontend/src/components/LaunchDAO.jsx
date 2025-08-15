@@ -228,17 +228,23 @@ const LaunchDAO = () => {
         if (!formData.tokenName.trim()) newErrors.tokenName = 'Token name is required';
         if (!formData.tokenSymbol.trim()) newErrors.tokenSymbol = 'Token symbol is required';
         if (!formData.totalSupply) newErrors.totalSupply = 'Total supply is required';
+        else if (!/^\d+$/.test(formData.totalSupply)) newErrors.totalSupply = 'Total supply must be numeric';
         if (!formData.initialPrice) newErrors.initialPrice = 'Initial price is required';
+        else if (!/^\d+$/.test(formData.initialPrice)) newErrors.initialPrice = 'Initial price must be numeric';
         break;
-      
+
       case 4:
         if (!formData.votingPeriod) newErrors.votingPeriod = 'Voting period is required';
+        else if (!/^\d+$/.test(formData.votingPeriod)) newErrors.votingPeriod = 'Voting period must be numeric';
         if (!formData.quorumThreshold) newErrors.quorumThreshold = 'Quorum threshold is required';
+        else if (!/^\d+$/.test(formData.quorumThreshold)) newErrors.quorumThreshold = 'Quorum threshold must be numeric';
         break;
-      
+
       case 5:
         if (!formData.fundingGoal) newErrors.fundingGoal = 'Funding goal is required';
+        else if (!/^\d+$/.test(formData.fundingGoal)) newErrors.fundingGoal = 'Funding goal must be numeric';
         if (!formData.minInvestment) newErrors.minInvestment = 'Minimum investment is required';
+        else if (!/^\d+$/.test(formData.minInvestment)) newErrors.minInvestment = 'Minimum investment must be numeric';
         break;
       
       case 6:

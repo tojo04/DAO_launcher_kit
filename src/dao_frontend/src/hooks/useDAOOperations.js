@@ -5,7 +5,20 @@ import { useActors } from '../context/ActorContext';
 import { useAuth } from '../context/AuthContext';
 import { Principal } from '@dfinity/principal';
 
-const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
+const safeBigInt = (value, field) => {
+    if (value === undefined || value === null || value === '') return 0n;
+    const str = value.toString();
+    if (!/^\d+$/.test(str)) {
+        throw new Error(`${field} must be a valid number`);
+    }
+    try {
+        return BigInt(str);
+    } catch {
+        throw new Error(`${field} is too large or invalid`);
+    }
+};
+
+const toNanoseconds = (seconds, field) => safeBigInt(seconds, field) * 1_000_000_000n;
 
 export const useDAOOperations = () => {
     const actors = useActors();
@@ -99,14 +112,14 @@ export const useDAOOperations = () => {
                 moduleFeatures,
                 tokenName: daoConfig.tokenName,
                 tokenSymbol: daoConfig.tokenSymbol,
-                totalSupply: BigInt(daoConfig.totalSupply || 0),
-                initialPrice: BigInt(daoConfig.initialPrice || 0),
-                votingPeriod: toNanoseconds(daoConfig.votingPeriod || 0),
-                quorumThreshold: BigInt(daoConfig.quorumThreshold || 0),
-                proposalThreshold: BigInt(daoConfig.proposalThreshold || 0),
-                fundingGoal: BigInt(daoConfig.fundingGoal || 0),
-                fundingDuration: toNanoseconds(daoConfig.fundingDuration || 0),
-                minInvestment: BigInt(daoConfig.minInvestment || 0),
+                totalSupply: safeBigInt(daoConfig.totalSupply, 'Total supply'),
+                initialPrice: safeBigInt(daoConfig.initialPrice, 'Initial price'),
+                votingPeriod: toNanoseconds(daoConfig.votingPeriod, 'Voting period'),
+                quorumThreshold: safeBigInt(daoConfig.quorumThreshold, 'Quorum threshold'),
+                proposalThreshold: safeBigInt(daoConfig.proposalThreshold, 'Proposal threshold'),
+                fundingGoal: safeBigInt(daoConfig.fundingGoal, 'Funding goal'),
+                fundingDuration: toNanoseconds(daoConfig.fundingDuration, 'Funding duration'),
+                minInvestment: safeBigInt(daoConfig.minInvestment, 'Minimum investment'),
                 termsAccepted: daoConfig.termsAccepted,
                 kycRequired: daoConfig.kycRequired
             });
