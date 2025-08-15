@@ -19,10 +19,17 @@ export const useDAOOperations = () => {
         
         try {
             // Step 1: Initialize the DAO with basic info
-            const initialAdmins = daoConfig.teamMembers
-                .map(member => member.wallet)
-                .filter(wallet => wallet) // Remove empty wallets
-                .map(wallet => Principal.fromText(wallet)); // Convert to Principal
+            const initialAdmins = [];
+            for (const member of daoConfig.teamMembers || []) {
+                const { wallet, name } = member;
+                if (!wallet) continue;
+                try {
+                    initialAdmins.push(Principal.fromText(wallet));
+                } catch (err) {
+                    console.warn(`Failed to parse wallet for team member ${name || wallet}:`, err);
+                    throw new Error(`Invalid team member wallet: ${wallet}`);
+                }
+            }
             let creatorPrincipal = null;
             // Add the creator as an admin if not already included
             if (principal) {

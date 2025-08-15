@@ -27,8 +27,9 @@ import { useDAO } from '../context/DAOContext';
 import { useNavigate } from 'react-router-dom';
 import { useDAOOperations } from '../hooks/useDAOOperations';
 import BackgroundParticles from './BackgroundParticles';
-import { 
-  ArrowLeft, 
+import { Principal } from '@dfinity/principal';
+import {
+  ArrowLeft,
   ArrowRight, 
   Rocket, 
   Shield, 
@@ -242,8 +243,17 @@ const LaunchDAO = () => {
         break;
       
       case 6:
-        if (formData.teamMembers.some(member => !member.name.trim() || !member.role.trim())) {
-          newErrors.teamMembers = 'All team members must have name and role';
+        for (const member of formData.teamMembers) {
+          if (!member.name.trim() || !member.role.trim() || !member.wallet.trim()) {
+            newErrors.teamMembers = 'All team members must have name, role, and wallet address';
+            break;
+          }
+          try {
+            Principal.fromText(member.wallet);
+          } catch (err) {
+            newErrors.teamMembers = `Invalid wallet principal for team member ${member.name || ''}`;
+            break;
+          }
         }
         break;
       
@@ -937,11 +947,11 @@ const LaunchDAO = () => {
                           type="text"
                           value={member.name}
                           onChange={(e) => updateTeamMember(index, 'name', e.target.value)}
-                          className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono"
+                          className={`w-full px-4 py-3 bg-gray-800 border ${errors.teamMembers ? 'border-red-500' : 'border-gray-600'} rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono`}
                           placeholder="John Doe"
                         />
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">
                           Role <span className="text-red-400">*</span>
@@ -950,18 +960,18 @@ const LaunchDAO = () => {
                           type="text"
                           value={member.role}
                           onChange={(e) => updateTeamMember(index, 'role', e.target.value)}
-                          className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono"
+                          className={`w-full px-4 py-3 bg-gray-800 border ${errors.teamMembers ? 'border-red-500' : 'border-gray-600'} rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono`}
                           placeholder="CEO"
                         />
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Wallet Address</label>
                         <input
                           type="text"
                           value={member.wallet}
                           onChange={(e) => updateTeamMember(index, 'wallet', e.target.value)}
-                          className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono"
+                          className={`w-full px-4 py-3 bg-gray-800 border ${errors.teamMembers ? 'border-red-500' : 'border-gray-600'} rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono`}
                           placeholder="0x..."
                         />
                       </div>
@@ -969,6 +979,9 @@ const LaunchDAO = () => {
                   </div>
                 ))}
               </div>
+              {errors.teamMembers && (
+                <p className="text-red-400 text-sm font-mono">{errors.teamMembers}</p>
+              )}
             </div>
           )}
 
