@@ -10,10 +10,12 @@ import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Blob "mo:base/Blob";
 import Nat32 "mo:base/Nat32";
+import Types "../shared/types";
 
 persistent actor AssetCanister {
     type Result<T, E> = Result.Result<T, E>;
     type Time = Time.Time;
+    type CommonError = Types.CommonError;
 
     // Asset types
     public type AssetId = Nat;
@@ -375,14 +377,14 @@ persistent actor AssetCanister {
     // Administrative functions
 
     // Add authorized uploader
-    public shared(msg) func addAuthorizedUploader(principal: Principal) : async Result<(), Text> {
+    public shared(msg) func addAuthorizedUploader(principal: Principal) : async Result<(), CommonError> {
         // Allow the first uploader to be added by anyone when the list is empty.
         if (authorizedUploaders.size() > 0 and not isAuthorized(msg.caller)) {
-            return #err("Not authorized to add uploaders");
+            return #err(#notAuthorized);
         };
 
         if (isAuthorized(principal)) {
-            return #err("Uploader already authorized");
+            return #err(#alreadyExists);
         };
 
         let principals = Buffer.fromArray<Principal>(authorizedUploaders);
@@ -394,13 +396,13 @@ persistent actor AssetCanister {
     };
 
     // Remove authorized uploader
-    public shared(msg) func removeAuthorizedUploader(principal: Principal) : async Result<(), Text> {
+    public shared(msg) func removeAuthorizedUploader(principal: Principal) : async Result<(), CommonError> {
         if (not isAuthorized(msg.caller)) {
-            return #err("Not authorized to remove uploaders");
+            return #err(#notAuthorized);
         };
 
         authorizedUploaders := Array.filter<Principal>(authorizedUploaders, func(p) = p != principal);
-        
+
         Debug.print("Authorized uploader removed: " # Principal.toText(principal));
         #ok()
     };
@@ -409,9 +411,9 @@ persistent actor AssetCanister {
     public shared(msg) func updateStorageLimits(
         maxFileSizeNew: ?Nat,
         maxTotalStorageNew: ?Nat
-    ) : async Result<(), Text> {
+    ) : async Result<(), CommonError> {
         if (not isAuthorized(msg.caller)) {
-            return #err("Not authorized to update storage limits");
+            return #err(#notAuthorized);
         };
 
         switch (maxFileSizeNew) {
@@ -422,7 +424,7 @@ persistent actor AssetCanister {
         switch (maxTotalStorageNew) {
             case (?size) {
                 if (size < currentStorageUsed) {
-                    return #err("New storage limit cannot be less than current usage");
+                    return #err(#invalidInput);
                 };
                 maxTotalStorage := size;
             };

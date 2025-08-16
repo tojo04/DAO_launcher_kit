@@ -418,8 +418,14 @@ persistent actor TreasuryCanister {
     // Administrative functions
 
     // Add authorized principal
-    public shared(_msg) func addAuthorizedPrincipal(principal: Principal) : async Result<(), Text> {
+    public shared(msg) func addAuthorizedPrincipal(principal: Principal) : async Result<(), CommonError> {
         // In real implementation, only governance or admin should be able to do this
+        if (authorizedPrincipals.size() > 0 and not isAuthorized(msg.caller)) {
+            return #err(#notAuthorized);
+        };
+        if (isAuthorized(principal)) {
+            return #err(#alreadyExists);
+        };
         let principals = Buffer.fromArray<Principal>(authorizedPrincipals);
         principals.add(principal);
         authorizedPrincipals := Buffer.toArray(principals);
@@ -427,8 +433,11 @@ persistent actor TreasuryCanister {
     };
 
     // Remove authorized principal
-    public shared(_msg) func removeAuthorizedPrincipal(principal: Principal) : async Result<(), Text> {
+    public shared(msg) func removeAuthorizedPrincipal(principal: Principal) : async Result<(), CommonError> {
         // In real implementation, only governance or admin should be able to do this
+        if (not isAuthorized(msg.caller)) {
+            return #err(#notAuthorized);
+        };
         authorizedPrincipals := Array.filter<Principal>(authorizedPrincipals, func(p) = p != principal);
         #ok()
     };

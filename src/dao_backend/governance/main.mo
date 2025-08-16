@@ -64,6 +64,8 @@ persistent actor GovernanceCanister {
     private var votesEntries : [(Text, Vote)] = []; // Key format: "proposalId_voterPrincipal"
     private var configEntries : [(Text, GovernanceConfig)] = [];
 
+    private var authorizedPrincipals : [Principal] = [];
+
     // Runtime storage - rebuilt from stable storage after upgrades
     // HashMaps provide O(1) lookup performance for governance operations
     private transient var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
@@ -457,9 +459,36 @@ public shared(_msg) func init(daoId: Principal, stakingId: Principal) {
         config.get("default")
     };
 
+    public shared(msg) func addAuthorizedPrincipal(principal: Principal) : async Result<(), CommonError> {
+        if (authorizedPrincipals.size() > 0 and not isAuthorized(msg.caller)) {
+            return #err(#notAuthorized);
+        };
+        if (isAuthorized(principal)) {
+            return #err(#alreadyExists);
+        };
+        let principals = Buffer.fromArray<Principal>(authorizedPrincipals);
+        principals.add(principal);
+        authorizedPrincipals := Buffer.toArray(principals);
+        #ok()
+    };
+
+    public shared(msg) func removeAuthorizedPrincipal(principal: Principal) : async Result<(), CommonError> {
+        if (not isAuthorized(msg.caller)) {
+            return #err(#notAuthorized);
+        };
+        authorizedPrincipals := Array.filter<Principal>(authorizedPrincipals, func(p) = p != principal);
+        #ok()
+    };
+
+    public query func getAuthorizedPrincipals() : async [Principal] {
+        authorizedPrincipals
+    };
+
     // Update governance configuration (admin only)
-    public shared(_msg) func updateConfig(newConfig: GovernanceConfig) : async Result<(), Text> {
-        // In a real implementation, you'd check if the caller is an admin
+    public shared(msg) func updateConfig(newConfig: GovernanceConfig) : async Result<(), CommonError> {
+        if (not isAuthorized(msg.caller)) {
+            return #err(#notAuthorized);
+        };
         config.put("default", newConfig);
         #ok()
     };
@@ -469,10 +498,14 @@ public shared(_msg) func init(daoId: Principal, stakingId: Principal) {
         let userProposals = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
             if (proposal.proposer == user and proposal.status == #active) {
-                userProposals.add(proposal);
+            userProposals.add(proposal);
             };
         };
         Buffer.toArray(userProposals)
+    };
+
+    private func isAuthorized(principal: Principal) : Bool {
+        Array.find<Principal>(authorizedPrincipals, func(p) = p == principal) != null
     };
 
     // Get governance statistics

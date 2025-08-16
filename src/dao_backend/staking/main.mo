@@ -64,6 +64,7 @@ persistent actor StakingCanister {
     private var stakingEnabled : Bool = true;
     private var minimumStakeAmount : TokenAmount = 10; // Minimum 10 tokens to prevent dust attacks
     private var maximumStakeAmount : TokenAmount = 1000000; // Maximum 1M tokens to prevent centralization
+    private var authorizedPrincipals : [Principal] = [];
 
     // System functions for upgrades
     system func preupgrade() {
@@ -418,23 +419,50 @@ persistent actor StakingCanister {
 
     // Administrative functions
 
+    public shared(msg) func addAuthorizedPrincipal(principal: Principal) : async Result<(), CommonError> {
+        if (authorizedPrincipals.size() > 0 and not isAuthorized(msg.caller)) {
+            return #err(#notAuthorized);
+        };
+        if (isAuthorized(principal)) {
+            return #err(#alreadyExists);
+        };
+        let principals = Buffer.fromArray<Principal>(authorizedPrincipals);
+        principals.add(principal);
+        authorizedPrincipals := Buffer.toArray(principals);
+        #ok()
+    };
+
+    public shared(msg) func removeAuthorizedPrincipal(principal: Principal) : async Result<(), CommonError> {
+        if (not isAuthorized(msg.caller)) {
+            return #err(#notAuthorized);
+        };
+        authorizedPrincipals := Array.filter<Principal>(authorizedPrincipals, func(p) = p != principal);
+        #ok()
+    };
+
     // Enable/disable staking
-    public shared(_msg) func setStakingEnabled(enabled: Bool) : async Result<(), Text> {
-        // In real implementation, only governance should be able to do this
+    public shared(msg) func setStakingEnabled(enabled: Bool) : async Result<(), CommonError> {
+        if (not isAuthorized(msg.caller)) {
+            return #err(#notAuthorized);
+        };
         stakingEnabled := enabled;
         #ok()
     };
 
     // Update minimum stake amount
-    public shared(_msg) func setMinimumStakeAmount(amount: TokenAmount) : async Result<(), Text> {
-        // In real implementation, only governance should be able to do this
+    public shared(msg) func setMinimumStakeAmount(amount: TokenAmount) : async Result<(), CommonError> {
+        if (not isAuthorized(msg.caller)) {
+            return #err(#notAuthorized);
+        };
         minimumStakeAmount := amount;
         #ok()
     };
 
     // Update maximum stake amount
-    public shared(_msg) func setMaximumStakeAmount(amount: TokenAmount) : async Result<(), Text> {
-        // In real implementation, only governance should be able to do this
+    public shared(msg) func setMaximumStakeAmount(amount: TokenAmount) : async Result<(), CommonError> {
+        if (not isAuthorized(msg.caller)) {
+            return #err(#notAuthorized);
+        };
         maximumStakeAmount := amount;
         #ok()
     };
@@ -483,5 +511,9 @@ persistent actor StakingCanister {
         };
 
         newValue > currentValue
+    };
+
+    private func isAuthorized(principal: Principal) : Bool {
+        Array.find<Principal>(authorizedPrincipals, func(p) = p == principal) != null
     };
 }
