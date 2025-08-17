@@ -5,11 +5,10 @@ import {
   useEffect,
   ReactNode,
 } from "react";
-import { initializeAgents } from "../config/agent";
+import { initializeAgents, type Actors } from "../config/agent";
 // @ts-ignore - AuthContext is a .jsx file, ignore TypeScript error
 import { useAuth } from "./AuthContext";
-
-type Actors = Awaited<ReturnType<typeof initializeAgents>>;
+import { useDAOManagement } from "./DAOManagementContext";
 
 const ActorContext = createContext<Actors | null>(null);
 
@@ -22,13 +21,30 @@ export const ActorProvider = ({ children }: ActorProviderProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { identity } = useAuth();
+  const { selectedDAO, daoActors, setActorsForDAO } = useDAOManagement();
 
   useEffect(() => {
     const setup = async () => {
+      if (!selectedDAO) {
+        setActors(null);
+        return;
+      }
       setLoading(true);
       try {
-        const initializedActors = await initializeAgents(identity);
-        setActors(initializedActors);
+        const existing = daoActors[selectedDAO.id];
+        if (existing) {
+          setActors(existing);
+        } else {
+          if (!selectedDAO.canisterIds?.daoBackend) {
+            throw new Error("Selected DAO is missing canister IDs");
+          }
+          const initializedActors = await initializeAgents(
+            selectedDAO.canisterIds,
+            identity
+          );
+          setActors(initializedActors);
+          setActorsForDAO(selectedDAO.id, initializedActors);
+        }
       } catch (err) {
         console.error("Failed to initialize actors:", err);
         setError((err as Error).message);
@@ -37,7 +53,7 @@ export const ActorProvider = ({ children }: ActorProviderProps) => {
       }
     };
     setup();
-  }, [identity]);
+  }, [identity, selectedDAO, daoActors, setActorsForDAO]);
 
   return (
     <ActorContext.Provider value={actors}>

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { useActors } from './ActorContext';
+import { useDAOManagement } from './DAOManagementContext';
 import { safeJsonStringify, safeJsonParse } from '../utils/jsonUtils';
 
 // Create the DAO Context
@@ -9,7 +9,8 @@ const DAOContext = createContext();
 // DAO Provider component
 export const DAOProvider = ({ children }) => {
   const { isAuthenticated, principal } = useAuth();
-  const actors = useActors();
+  const { selectedDAO, daoActors } = useDAOManagement();
+  const [actors, setActors] = useState(null);
   const daoBackend = actors?.daoBackend;
   const [activeDAO, setActiveDAO] = useState(null);
   const [userDAOs, setUserDAOs] = useState([]);
@@ -107,11 +108,21 @@ export const DAOProvider = ({ children }) => {
 
   const hasActiveDAO = activeDAO !== null;
 
+  // Update actors when selectedDAO changes
+  useEffect(() => {
+    if (selectedDAO) {
+      setActors(daoActors[selectedDAO.id] || null);
+    } else {
+      setActors(null);
+    }
+  }, [selectedDAO, daoActors]);
+
   const value = {
     activeDAO,
     userDAOs,
     hasActiveDAO,
     loading,
+    actors,
     selectDAO,
     addUserDAO,
     removeUserDAO,

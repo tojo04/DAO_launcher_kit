@@ -1,12 +1,13 @@
-type UserProfile = 
+type UserProfile =
  record {
-   bio: text;
-   displayName: text;
-   id: UserId;
-   joinedAt: Time;
-   reputation: nat;
-   totalStaked: nat;
-   votingPower: nat;
+  daoId: principal;
+  bio: text;
+  displayName: text;
+  id: UserId;
+  joinedAt: Time;
+  reputation: nat;
+  totalStaked: nat;
+  votingPower: nat;
  };
 type UserId = principal;
 type TokenAmount = nat;

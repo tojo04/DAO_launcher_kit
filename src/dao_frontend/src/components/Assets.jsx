@@ -16,6 +16,7 @@ const Assets = () => {
     loading,
     error,
   } = useAssets();
+  const daoId = 1;
   const [file, setFile] = useState(null);
   const [batchFiles, setBatchFiles] = useState([]);
   const [assets, setAssets] = useState([]);
@@ -30,7 +31,7 @@ const Assets = () => {
 
   const fetchStats = async () => {
     try {
-      const s = await getStorageStats();
+      const s = await getStorageStats(daoId);
       setStats(s);
     } catch (err) {
       console.error(err);
@@ -39,7 +40,9 @@ const Assets = () => {
 
   const fetchAssets = async (t = '') => {
     try {
-      const list = t ? await searchAssetsByTag(t) : await getPublicAssets();
+      const list = t
+        ? await searchAssetsByTag(daoId, t)
+        : await getPublicAssets(daoId);
       setAssets(list);
     } catch (err) {
       console.error(err);
@@ -61,7 +64,7 @@ const Assets = () => {
         setMessage(`Unsupported file type: ${file.type}`);
         return;
       }
-      await uploadAsset(file, true, []);
+      await uploadAsset(daoId, file, true, []);
       setFile(null);
       setMessage('File uploaded');
       fetchAssets(tag);
@@ -81,7 +84,7 @@ const Assets = () => {
     if (!name) return;
     setMessage('');
     try {
-      const res = await getAssetByName(name);
+      const res = await getAssetByName(daoId, name);
       if (res.length === 0) {
         setAssets([]);
         setMessage('No asset found');
@@ -104,7 +107,7 @@ const Assets = () => {
         setMessage(`Unsupported file types: ${unsupported.map((f) => f.name).join(', ')}`);
         return;
       }
-      await batchUploadAssets(batchFiles.map((f) => ({ file: f, isPublic: true, tags: [] })));
+      await batchUploadAssets(daoId, batchFiles.map((f) => ({ file: f, isPublic: true, tags: [] })));
       setBatchFiles([]);
       setMessage('Batch upload successful');
       fetchAssets(tag);
@@ -116,7 +119,7 @@ const Assets = () => {
 
   const handleView = async (id) => {
     try {
-      const asset = await getAsset(id);
+      const asset = await getAsset(daoId, id);
       const blob = new Blob([new Uint8Array(asset.data)], { type: asset.contentType });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
@@ -127,7 +130,7 @@ const Assets = () => {
 
   const handleDelete = async (id) => {
     try {
-      await deleteAsset(id);
+      await deleteAsset(daoId, id);
       fetchAssets(tag);
       fetchStats();
     } catch (err) {
@@ -149,7 +152,7 @@ const Assets = () => {
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
     try {
-      await updateAssetMetadata(id, {
+      await updateAssetMetadata(daoId, id, {
         name: editName,
         isPublic: editPublic,
         tags: tagsArray,

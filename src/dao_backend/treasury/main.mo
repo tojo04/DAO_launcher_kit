@@ -87,7 +87,7 @@ persistent actor TreasuryCanister {
     // Public functions
 
     // Deposit tokens to treasury
-    public shared(msg) func deposit(amount: TokenAmount, description: Text) : async Result<Nat, Text> {
+    public shared(msg) func deposit(daoId: Principal, amount: TokenAmount, description: Text) : async Result<Nat, Text> {
         if (amount == 0) {
             return #err("Amount must be greater than 0");
         };
@@ -96,6 +96,7 @@ persistent actor TreasuryCanister {
         nextTransactionId += 1;
 
         let transaction : TreasuryTransaction = {
+            daoId = daoId;
             id = transactionId;
             transactionType = #deposit;
             amount = amount;
@@ -118,6 +119,7 @@ persistent actor TreasuryCanister {
 
     // Withdraw tokens from treasury (requires authorization)
     public shared(msg) func withdraw(
+        daoId: Principal,
         recipient: Principal,
         amount: TokenAmount,
         description: Text,
@@ -139,6 +141,7 @@ persistent actor TreasuryCanister {
         nextTransactionId += 1;
 
         let transaction : TreasuryTransaction = {
+            daoId = daoId;
             id = transactionId;
             transactionType = #withdrawal;
             amount = amount;
@@ -160,6 +163,7 @@ persistent actor TreasuryCanister {
                 availableBalance -= amount;
                 
                 let completedTransaction = {
+                    daoId = transaction.daoId;
                     id = transaction.id;
                     transactionType = transaction.transactionType;
                     amount = transaction.amount;
@@ -176,6 +180,7 @@ persistent actor TreasuryCanister {
             };
             case (#err(error)) {
                 let failedTransaction = {
+                    daoId = transaction.daoId;
                     id = transaction.id;
                     transactionType = transaction.transactionType;
                     amount = transaction.amount;
@@ -193,7 +198,7 @@ persistent actor TreasuryCanister {
     };
 
     // Lock tokens for specific purposes (e.g., staking rewards)
-    public shared(msg) func lockTokens(amount: TokenAmount, reason: Text) : async Result<(), Text> {
+    public shared(msg) func lockTokens(daoId: Principal, amount: TokenAmount, reason: Text) : async Result<(), Text> {
         if (not isAuthorized(msg.caller)) {
             return #err("Not authorized");
         };
@@ -209,6 +214,7 @@ persistent actor TreasuryCanister {
         nextTransactionId += 1;
 
         let transaction : TreasuryTransaction = {
+            daoId = daoId;
             id = transactionId;
             transactionType = #stakingReward;
             amount = amount;
@@ -225,7 +231,7 @@ persistent actor TreasuryCanister {
     };
 
     // Unlock tokens
-    public shared(msg) func unlockTokens(amount: TokenAmount, reason: Text) : async Result<(), Text> {
+    public shared(msg) func unlockTokens(daoId: Principal, amount: TokenAmount, reason: Text) : async Result<(), Text> {
         if (not isAuthorized(msg.caller)) {
             return #err("Not authorized");
         };
@@ -241,6 +247,7 @@ persistent actor TreasuryCanister {
         nextTransactionId += 1;
 
         let transaction : TreasuryTransaction = {
+            daoId = daoId;
             id = transactionId;
             transactionType = #stakingReward;
             amount = amount;
@@ -257,7 +264,7 @@ persistent actor TreasuryCanister {
     };
 
     // Reserve tokens for future use
-    public shared(msg) func reserveTokens(amount: TokenAmount, reason: Text) : async Result<(), Text> {
+    public shared(msg) func reserveTokens(daoId: Principal, amount: TokenAmount, reason: Text) : async Result<(), Text> {
         if (not isAuthorized(msg.caller)) {
             return #err("Not authorized");
         };
@@ -273,6 +280,7 @@ persistent actor TreasuryCanister {
         nextTransactionId += 1;
 
         let transaction : TreasuryTransaction = {
+            daoId = daoId;
             id = transactionId;
             transactionType = #fee;
             amount = amount;
@@ -289,7 +297,7 @@ persistent actor TreasuryCanister {
     };
 
     // Release reserved tokens
-    public shared(msg) func releaseReservedTokens(amount: TokenAmount, reason: Text) : async Result<(), Text> {
+    public shared(msg) func releaseReservedTokens(daoId: Principal, amount: TokenAmount, reason: Text) : async Result<(), Text> {
         if (not isAuthorized(msg.caller)) {
             return #err("Not authorized");
         };
@@ -305,6 +313,7 @@ persistent actor TreasuryCanister {
         nextTransactionId += 1;
 
         let transaction : TreasuryTransaction = {
+            daoId = daoId;
             id = transactionId;
             transactionType = #fee;
             amount = amount;

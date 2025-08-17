@@ -10,6 +10,7 @@ const ManagementAssets: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
 
   const { getUserAssets, getPublicAssets, uploadAsset, getAsset } = useAssets();
+  const daoId = dao.id;
   const [assets, setAssets] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -17,8 +18,8 @@ const ManagementAssets: React.FC = () => {
   const fetchAssets = async () => {
     try {
       const [userAssets, publicAssets] = await Promise.all([
-        getUserAssets(),
-        getPublicAssets(),
+        getUserAssets(daoId),
+        getPublicAssets(daoId),
       ]);
       const userIds = new Set(userAssets.map((a: any) => Number(a.id)));
       const combined = [
@@ -47,7 +48,7 @@ const ManagementAssets: React.FC = () => {
       setUploadProgress((p) => (p < 90 ? p + 10 : p));
     }, 200);
     try {
-      await uploadAsset(file, true, []);
+      await uploadAsset(daoId, file, true, []);
       setUploadProgress(100);
       await fetchAssets();
     } catch (err) {
@@ -63,7 +64,7 @@ const ManagementAssets: React.FC = () => {
 
   const handleDownload = async (id: bigint) => {
     try {
-      const asset = await getAsset(id);
+      const asset = await getAsset(daoId, id);
       const blob = new Blob([new Uint8Array(asset.data)], {
         type: asset.contentType,
       });

@@ -238,6 +238,7 @@ persistent actor DAOMain {
     };
 
     // User management
+
     public shared(msg) func registerUser(daoId: DAOId, displayName: Text, bio: Text) : async Result<(), Text> {
         let caller = msg.caller;
         let state = ensureDAO(daoId);
@@ -248,6 +249,7 @@ persistent actor DAOMain {
         };
 
         let userProfile : UserProfile = {
+
             id = caller;
             displayName = displayName;
             bio = bio;
@@ -257,12 +259,14 @@ persistent actor DAOMain {
             votingPower = 0;
         };
 
+
         state.userProfiles.put(caller, userProfile);
         state.totalMembers += 1;
 
         Debug.print("User registered: " # displayName);
         #ok()
     };
+
 
     public shared(msg) func adminRegisterUser(daoId: DAOId, newUser: Principal, displayName: Text, bio: Text) : async Result<(), Text> {
         if (not isAdmin(daoId, msg.caller)) {
@@ -277,6 +281,7 @@ persistent actor DAOMain {
         };
 
         let userProfile : UserProfile = {
+            daoId = Principal.fromActor(DAOMain);
             id = newUser;
             displayName = displayName;
             bio = bio;
@@ -293,6 +298,7 @@ persistent actor DAOMain {
         #ok()
     };
 
+
     public shared(msg) func updateUserProfile(daoId: DAOId, displayName: Text, bio: Text) : async Result<(), Text> {
         let caller = msg.caller;
         let state = ensureDAO(daoId);
@@ -301,6 +307,7 @@ persistent actor DAOMain {
             case null return #err("User not found");
             case (?profile) {
                 let updatedProfile = {
+
                     id = profile.id;
                     displayName = displayName;
                     bio = bio;
@@ -309,6 +316,7 @@ persistent actor DAOMain {
                     totalStaked = profile.totalStaked;
                     votingPower = profile.votingPower;
                 };
+
                 state.userProfiles.put(caller, updatedProfile);
                 #ok()
             };

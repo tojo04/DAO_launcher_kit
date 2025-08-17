@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { DAO } from '../../types/dao';
 import { useAssets } from '../../hooks/useAssets';
 import { Plus, Trash2 } from 'lucide-react';
 
 const ManagementAssetsAdmin: React.FC = () => {
+  const { dao } = useOutletContext<{ dao: DAO }>();
+
   const {
     getAuthorizedUploaders,
     addAuthorizedUploader,
@@ -10,6 +14,7 @@ const ManagementAssetsAdmin: React.FC = () => {
     getStorageStats,
     updateStorageLimits,
   } = useAssets();
+  const daoId = dao.id;
 
   const [uploaders, setUploaders] = useState<string[]>([]);
   const [newUploader, setNewUploader] = useState('');
@@ -23,7 +28,7 @@ const ManagementAssetsAdmin: React.FC = () => {
     try {
       const [uploaderList, storageStats] = await Promise.all([
         getAuthorizedUploaders(),
-        getStorageStats(),
+        getStorageStats(daoId),
       ]);
       setUploaders(uploaderList);
       setStats(storageStats);

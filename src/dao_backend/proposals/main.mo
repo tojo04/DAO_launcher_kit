@@ -182,6 +182,7 @@ persistent actor ProposalsCanister {
 
     // Create a new proposal
     public shared(msg) func createProposal(
+        daoId: Principal,
         title: Text,
         description: Text,
         proposalType: Types.ProposalType,
@@ -210,6 +211,7 @@ persistent actor ProposalsCanister {
         };
 
         let proposal : Proposal = {
+            daoId = daoId;
             id = proposalId;
             proposer = caller;
             title = title;
@@ -232,6 +234,7 @@ persistent actor ProposalsCanister {
 
     // Create proposal from template
     public shared(_msg) func createProposalFromTemplate(
+        daoId: Principal,
         templateId: Nat,
         title: Text,
         parameters: [(Text, Text)],
@@ -258,6 +261,7 @@ persistent actor ProposalsCanister {
 
         // Create proposal with text type for now
         await createProposal(
+            daoId,
             title,
             description,
             #textProposal(description),
@@ -268,12 +272,13 @@ persistent actor ProposalsCanister {
 
     // Batch vote on multiple proposals
     public shared(_msg) func batchVote(
+        daoId: Principal,
         votes: [(ProposalId, Types.VoteChoice, ?Text)]
     ) : async [Result<(), Text>] {
         let results = Buffer.Buffer<Result<(), Text>>(votes.size());
 
         for ((proposalId, choice, reason) in votes.vals()) {
-            let result = await vote(proposalId, choice, reason);
+            let result = await vote(daoId, proposalId, choice, reason);
             results.add(result);
         };
         
@@ -282,6 +287,7 @@ persistent actor ProposalsCanister {
 
     // Cast a vote on a proposal
     public shared(msg) func vote(
+        daoId: Principal,
         proposalId: ProposalId,
         choice: Types.VoteChoice,
         reason: ?Text
@@ -323,6 +329,7 @@ persistent actor ProposalsCanister {
 
         // Create vote record
         let vote : Vote = {
+            daoId = daoId;
             voter = caller;
             proposalId = proposalId;
             choice = choice;
@@ -337,6 +344,7 @@ persistent actor ProposalsCanister {
         let updatedProposal = switch (choice) {
             case (#inFavor) {
                 {
+                    daoId = proposal.daoId;
                     id = proposal.id;
                     proposer = proposal.proposer;
                     title = proposal.title;
@@ -355,6 +363,7 @@ persistent actor ProposalsCanister {
             };
             case (#against) {
                 {
+                    daoId = proposal.daoId;
                     id = proposal.id;
                     proposer = proposal.proposer;
                     title = proposal.title;
@@ -373,6 +382,7 @@ persistent actor ProposalsCanister {
             };
             case (#abstain) {
                 {
+                    daoId = proposal.daoId;
                     id = proposal.id;
                     proposer = proposal.proposer;
                     title = proposal.title;
