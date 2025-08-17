@@ -4,6 +4,7 @@ import type { IDL } from '@dfinity/candid';
 
 export interface Asset {
   'id' : AssetId,
+  'daoId' : Principal,
   'contentType' : string,
   'data' : AssetData,
   'name' : string,
@@ -17,13 +18,14 @@ export type AssetData = Uint8Array | number[];
 export type AssetId = bigint;
 export interface AssetMetadata {
   'id' : AssetId,
-  'contentType' : string,
+  'daoId' : Principal,
   'name' : string,
+  'contentType' : string,
   'size' : bigint,
-  'tags' : Array<string>,
-  'isPublic' : boolean,
-  'uploadedAt' : Time,
   'uploadedBy' : Principal,
+  'uploadedAt' : Time,
+  'isPublic' : boolean,
+  'tags' : Array<string>,
 }
 export type Result = { 'ok' : AssetId } |
   { 'err' : string };
@@ -35,17 +37,17 @@ export type Time = bigint;
 export interface _SERVICE {
   'addAuthorizedUploader' : ActorMethod<[Principal], Result_1>,
   'batchUploadAssets' : ActorMethod<
-    [Array<[string, string, AssetData, boolean, Array<string>]>],
+    [Principal, Array<[string, string, AssetData, boolean, Array<string>]>],
     Array<Result>
   >,
-  'deleteAsset' : ActorMethod<[AssetId], Result_1>,
-  'getAsset' : ActorMethod<[AssetId], Result_2>,
-  'getAssetByName' : ActorMethod<[string], [] | [AssetMetadata]>,
-  'getAssetMetadata' : ActorMethod<[AssetId], [] | [AssetMetadata]>,
+  'deleteAsset' : ActorMethod<[Principal, AssetId], Result_1>,
+  'getAsset' : ActorMethod<[Principal, AssetId], Result_2>,
+  'getAssetByName' : ActorMethod<[Principal, string], [] | [AssetMetadata]>,
+  'getAssetMetadata' : ActorMethod<[Principal, AssetId], [] | [AssetMetadata]>,
   'getAuthorizedUploaders' : ActorMethod<[], Array<Principal>>,
-  'getPublicAssets' : ActorMethod<[], Array<AssetMetadata>>,
+  'getPublicAssets' : ActorMethod<[Principal], Array<AssetMetadata>>,
   'getStorageStats' : ActorMethod<
-    [],
+    [Principal],
     {
       'storageLimit' : bigint,
       'totalAssets' : bigint,
@@ -55,21 +57,27 @@ export interface _SERVICE {
     }
   >,
   'getSupportedContentTypes' : ActorMethod<[], Array<string>>,
-  'getUserAssets' : ActorMethod<[], Array<AssetMetadata>>,
+  'getUserAssets' : ActorMethod<[Principal], Array<AssetMetadata>>,
   'health' : ActorMethod<
     [],
     { 'status' : string, 'storageUsed' : bigint, 'timestamp' : Time }
   >,
   'init' : ActorMethod<[[] | [Principal], boolean], undefined>,
   'removeAuthorizedUploader' : ActorMethod<[Principal], Result_1>,
-  'searchAssetsByTag' : ActorMethod<[string], Array<AssetMetadata>>,
+  'searchAssetsByTag' : ActorMethod<[Principal, string], Array<AssetMetadata>>,
   'updateAssetMetadata' : ActorMethod<
-    [AssetId, [] | [string], [] | [boolean], [] | [Array<string>]],
+    [
+      Principal,
+      AssetId,
+      [] | [string],
+      [] | [boolean],
+      [] | [Array<string>]
+    ],
     Result_1
   >,
   'updateStorageLimits' : ActorMethod<[[] | [bigint], [] | [bigint]], Result_1>,
   'uploadAsset' : ActorMethod<
-    [string, string, AssetData, boolean, Array<string>],
+    [Principal, string, string, AssetData, boolean, Array<string>],
     Result
   >,
 }
