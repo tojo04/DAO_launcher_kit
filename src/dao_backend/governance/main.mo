@@ -90,6 +90,7 @@ persistent actor GovernanceCanister {
     private var votesEntries : [(VoteKey, Vote)] = [];
     private var configEntries : [(Principal, GovernanceConfig)] = [];
     private var stakingId : ?Principal = null;
+    private var daoPrincipal : ?Principal = null;
     private var daoInstance : ?Types.DAOId = null;
     private var initialized : Bool = false;
 
@@ -119,6 +120,7 @@ persistent actor GovernanceCanister {
         };
 
         stakingId := ?newStakingId;
+        daoPrincipal := ?newDaoId;
         daoInstance := ?daoInstanceId;
         dao := ?daoTemp;
         staking := ?actor(Principal.toText(newStakingId));
@@ -177,6 +179,10 @@ persistent actor GovernanceCanister {
 
         switch (stakingId) {
             case (?id) staking := ?actor(Principal.toText(id));
+            case null {};
+        };
+        switch (daoPrincipal) {
+            case (?id) dao := ?actor(Principal.toText(id));
             case null {};
         };
     };
