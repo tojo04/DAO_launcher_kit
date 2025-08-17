@@ -175,6 +175,7 @@ persistent actor DAOMain {
         };
 
         let userProfile : UserProfile = {
+            daoId = Principal.fromActor(DAOMain);
             id = caller;
             displayName = displayName;
             bio = bio;
@@ -202,6 +203,7 @@ persistent actor DAOMain {
         };
 
         let userProfile : UserProfile = {
+            daoId = Principal.fromActor(DAOMain);
             id = newUser;
             displayName = displayName;
             bio = bio;
@@ -225,6 +227,7 @@ persistent actor DAOMain {
             case null return #err("User not found");
             case (?profile) {
                 let updatedProfile = {
+                    daoId = profile.daoId;
                     id = profile.id;
                     displayName = displayName;
                     bio = bio;
