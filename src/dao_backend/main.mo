@@ -137,23 +137,7 @@ persistent actor DAOMain {
     private func ensureDAO(daoId: DAOId) : DAOState {
         switch (daoStates.get(daoId)) {
             case (?state) state;
-            case null {
-                let newState : DAOState = {
-                    initialized = false;
-                    daoName = "";
-                    daoDescription = "";
-                    totalMembers = 0;
-                    userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
-                    adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
-                    daoConfig = null;
-                    governanceCanister = null;
-                    stakingCanister = null;
-                    treasuryCanister = null;
-                    proposalsCanister = null;
-                };
-                daoStates.put(daoId, newState);
-                newState
-            };
+            case null Debug.trap("DAO not initialized");
         }
     };
 
@@ -175,9 +159,30 @@ persistent actor DAOMain {
         description: Text,
         initialAdmins: [Principal]
     ) : async Result<(), Text> {
-        let state = ensureDAO(daoId);
-        if (state.initialized) {
-            return #err("DAO already initialized");
+        let state = switch (daoStates.get(daoId)) {
+            case (?existing) {
+                if (existing.initialized) {
+                    return #err("DAO already initialized");
+                };
+                existing
+            };
+            case null {
+                let newState : DAOState = {
+                    initialized = false;
+                    daoName = "";
+                    daoDescription = "";
+                    totalMembers = 0;
+                    userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
+                    adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
+                    daoConfig = null;
+                    governanceCanister = null;
+                    stakingCanister = null;
+                    treasuryCanister = null;
+                    proposalsCanister = null;
+                };
+                daoStates.put(daoId, newState);
+                newState
+            };
         };
 
         state.daoName := name;
@@ -217,6 +222,9 @@ persistent actor DAOMain {
         };
 
         let state = ensureDAO(daoId);
+        if (not state.initialized) {
+            return #err("DAO not initialized");
+        };
         state.governanceCanister := ?governance;
         state.stakingCanister := ?staking;
         state.treasuryCanister := ?treasury;
@@ -232,6 +240,9 @@ persistent actor DAOMain {
             return #err("Only admins can set DAO configuration");
         };
         let state = ensureDAO(daoId);
+        if (not state.initialized) {
+            return #err("DAO not initialized");
+        };
         state.daoConfig := ?config;
         Debug.print("DAO configuration saved");
         #ok()
@@ -242,6 +253,9 @@ persistent actor DAOMain {
     public shared(msg) func registerUser(daoId: DAOId, displayName: Text, bio: Text) : async Result<(), Text> {
         let caller = msg.caller;
         let state = ensureDAO(daoId);
+        if (not state.initialized) {
+            return #err("DAO not initialized");
+        };
 
         switch (state.userProfiles.get(caller)) {
             case (?_) return #err("User already registered");
@@ -274,6 +288,9 @@ persistent actor DAOMain {
         };
 
         let state = ensureDAO(daoId);
+        if (not state.initialized) {
+            return #err("DAO not initialized");
+        };
 
         switch (state.userProfiles.get(newUser)) {
             case (?_) return #err("User already registered");
@@ -302,6 +319,9 @@ persistent actor DAOMain {
     public shared(msg) func updateUserProfile(daoId: DAOId, displayName: Text, bio: Text) : async Result<(), Text> {
         let caller = msg.caller;
         let state = ensureDAO(daoId);
+        if (not state.initialized) {
+            return #err("DAO not initialized");
+        };
 
         switch (state.userProfiles.get(caller)) {
             case null return #err("User not found");
@@ -583,6 +603,9 @@ persistent actor DAOMain {
         };
 
         let state = ensureDAO(daoId);
+        if (not state.initialized) {
+            return #err("DAO not initialized");
+        };
         state.adminPrincipals.put(newAdmin, true);
         Debug.print("New admin added: " # Principal.toText(newAdmin));
         #ok()
@@ -598,6 +621,9 @@ persistent actor DAOMain {
         };
 
         let state = ensureDAO(daoId);
+        if (not state.initialized) {
+            return #err("DAO not initialized");
+        };
         state.adminPrincipals.delete(adminToRemove);
         Debug.print("Admin removed: " # Principal.toText(adminToRemove));
         #ok()
