@@ -1,3 +1,5 @@
+import type { CanisterIds, Actors } from '../config/agent';
+
 export interface DAO {
   id: string;
   name: string;
@@ -21,11 +23,13 @@ export interface DAO {
     totalStaked: string;
     apr: string;
   };
+  canisterIds: CanisterIds;
 }
 
 export interface DAOContextType {
   daos: DAO[];
   selectedDAO: DAO | null;
+  daoActors: Record<string, Actors>;
   loading: boolean;
   error: string | null;
   fetchDAOs: () => Promise<void>;
@@ -33,6 +37,7 @@ export interface DAOContextType {
   createDAO: (daoData: Partial<DAO>) => Promise<void>;
   refreshDAOs: () => Promise<void>;
   deleteDAO: (daoId: string) => Promise<void>;
+  setActorsForDAO: (daoId: string, actors: Actors) => void;
 }
 
 export interface DAOFormData {

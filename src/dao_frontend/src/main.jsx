@@ -4,17 +4,20 @@ import App from './App'
 import { ActorProvider } from './context/ActorContext'
 import { AuthProvider } from './context/AuthContext'
 import { DAOProvider } from './context/DAOContext'
+import { DAOManagementProvider } from './context/DAOManagementContext'
 import './index.css'
 import './app.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
-      <ActorProvider>
-        <DAOProvider>
-          <App />
-        </DAOProvider>
-      </ActorProvider>
+      <DAOManagementProvider>
+        <ActorProvider>
+          <DAOProvider>
+            <App />
+          </DAOProvider>
+        </ActorProvider>
+      </DAOManagementProvider>
     </AuthProvider>
   </React.StrictMode>,
 )
