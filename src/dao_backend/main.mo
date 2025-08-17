@@ -30,6 +30,7 @@ persistent actor DAOMain {
     type Proposal = Types.Proposal;
     type Vote = Types.Vote;
     type ProposalId = Types.ProposalId;
+    type VoteChoice = Types.VoteChoice;
     type Stake = Types.Stake;
     type StakeId = Types.StakeId;
     type TokenAmount = Types.TokenAmount;
@@ -678,41 +679,36 @@ persistent actor DAOMain {
         }
     };
 
+
+    // Voting function delegating to proposals canister
     public shared(msg) func vote(
         daoId: DAOId,
-        proposalId: Nat,
-        choice: Text,
+        proposalId: ProposalId,
+        choice: VoteChoice,
         reason: ?Text
     ) : async Result<(), Text> {
         if (not isRegisteredUser(daoId, msg.caller)) {
             return #err("Only registered users can vote");
         };
-        switch (daoStates.get(daoId)) {
-            case (?state) {
-                switch (state.proposalsCanister) {
-                    case (?canisterId) {
-                        let proposals : actor {
-                            vote : shared (Principal, Nat, Types.VoteChoice, ?Text) -> async Result<(), Text>;
-                        } = actor(Principal.toText(canisterId));
-                        let voteChoice = switch (choice) {
-                            case ("inFavor") #inFavor;
-                            case ("against") #against;
-                            case _ #abstain;
-                        };
-                        let res = await proposals.vote(
-                            Principal.fromText(daoId),
-                            proposalId,
-                            voteChoice,
-                            reason
-                        );
-                        res
-                    };
-                    case null { #err("Proposals canister not configured") };
-                }
+
+        let state = ensureDAO(daoId);
+        switch (state.proposalsCanister) {
+            case null return #err("Proposals canister not configured");
+            case (?proposalsId) {
+                let proposals = actor(Principal.toText(proposalsId)) : actor {
+                    vote: shared (
+                        DAOId,
+                        Principal,
+                        ProposalId,
+                        VoteChoice,
+                        ?Text
+                    ) -> async Result<(), Text>;
+                };
+                await proposals.vote(daoId, msg.caller, proposalId, choice, reason)
             };
-            case null { #err("DAO not found") };
         }
     };
+
 
 
     // Utility functions
