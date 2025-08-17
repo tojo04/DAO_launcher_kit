@@ -12,7 +12,7 @@ actor {
             public query func checkIsAdmin(_: Types.DAOId, p: Principal) : async Bool { p == admin };
         };
         let stakingStub = actor {
-            public shared query func getUserStakingSummary(_: Principal) -> async {
+            public shared query func getUserStakingSummary(_: Principal, _: Principal) -> async {
                 totalStaked: Nat;
                 totalRewards: Nat;
                 activeStakes: Nat;

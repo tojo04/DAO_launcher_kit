@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStaking } from '../hooks/useStaking';
 import { useAuth } from '../context/AuthContext';
+import { useDAO } from '../context/DAOContext';
 
 const Staking = () => {
   const {
@@ -18,6 +19,8 @@ const Staking = () => {
     error,
   } = useStaking();
   const { principal } = useAuth();
+  const { activeDAO } = useDAO();
+  const daoId = activeDAO?.id;
   const [amount, setAmount] = useState('');
   const [period, setPeriod] = useState('instant');
   const [unstakeId, setUnstakeId] = useState('');
@@ -35,7 +38,7 @@ const Staking = () => {
   const handleStake = async (e) => {
     e.preventDefault();
     try {
-      const id = await stake(amount, period);
+      const id = await stake(daoId, amount, period);
       console.log('Stake created:', id);
       setAmount('');
     } catch (err) {
@@ -46,7 +49,7 @@ const Staking = () => {
   const handleUnstake = async (e) => {
     e.preventDefault();
     try {
-      const amount = await unstake(unstakeId);
+      const amount = await unstake(daoId, unstakeId);
       console.log('Unstaked amount:', amount);
       setUnstakeId('');
     } catch (err) {
@@ -58,7 +61,7 @@ const Staking = () => {
     e.preventDefault();
     try {
       setFetchError(null);
-      const stakeRes = await getStake(fetchId);
+      const stakeRes = await getStake(daoId, fetchId);
       if (!stakeRes || stakeRes.length === 0) {
         setFetchedStake(null);
         setPendingRewards(null);
@@ -66,7 +69,7 @@ const Staking = () => {
         return;
       }
       setFetchedStake(stakeRes[0]);
-      const rewardsRes = await getStakingRewards(fetchId);
+      const rewardsRes = await getStakingRewards(daoId, fetchId);
       setPendingRewards(rewardsRes[0] || null);
     } catch (err) {
       console.error(err);
@@ -76,7 +79,7 @@ const Staking = () => {
 
   const handleClaimFetched = async () => {
     try {
-      const rewards = await claimRewards(fetchId);
+      const rewards = await claimRewards(daoId, fetchId);
       console.log('Rewards claimed:', rewards);
       setFetchId('');
       setFetchedStake(null);
@@ -88,7 +91,7 @@ const Staking = () => {
 
   const handleSummary = async () => {
     try {
-      const res = await getUserStakingSummary(principal);
+      const res = await getUserStakingSummary(daoId, principal);
       setSummary(res);
     } catch (err) {
       console.error(err);
@@ -98,7 +101,7 @@ const Staking = () => {
   const handleExtend = async (e) => {
     e.preventDefault();
     try {
-      await extendStakingPeriod(extendId, extendPeriod);
+      await extendStakingPeriod(daoId, extendId, extendPeriod);
       setExtendId('');
     } catch (err) {
       console.error(err);

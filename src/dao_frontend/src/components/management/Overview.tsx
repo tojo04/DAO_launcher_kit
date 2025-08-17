@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
 
 import { useProposals } from '../../hooks/useProposals';
-import { useStaking } from '../../hooks/useStaking';
 import { useTreasury } from '../../hooks/useTreasury';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -29,7 +28,6 @@ const Overview: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
   const { daoBackend } = useActors();
   const { createProposal } = useProposals();
-  const { stake } = useStaking();
   const { getBalance } = useTreasury();
   const navigate = useNavigate();
 

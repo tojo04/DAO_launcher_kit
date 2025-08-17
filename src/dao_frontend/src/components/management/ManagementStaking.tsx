@@ -63,9 +63,12 @@ const ManagementStaking: React.FC = () => {
     if (!actors?.staking) return;
     try {
       const principalId = principal ? Principal.fromText(principal) : undefined;
+      const daoPrincipal = Principal.fromText(dao.id);
       const [stats, stakes] = await Promise.all([
-        actors.staking.getStakingStats(),
-        principalId ? actors.staking.getUserStakes(principalId) : Promise.resolve([])
+        actors.staking.getStakingStats(daoPrincipal),
+        principalId
+          ? actors.staking.getUserStakes(daoPrincipal, principalId)
+          : Promise.resolve([])
       ]);
 
       setUserStakes(stakes);
@@ -141,7 +144,7 @@ const ManagementStaking: React.FC = () => {
             const period = prompt('Staking period (instant, locked30, locked90, locked180, locked365)?');
             if (!amount || !period) return;
             try {
-              await stake(amount, period);
+              await stake(dao.id, amount, period);
               await fetchData();
             } catch (e) {
               console.error(e);
@@ -252,7 +255,7 @@ const ManagementStaking: React.FC = () => {
                   const amount = prompt('Amount to stake?');
                   if (!amount) return;
                   try {
-                    await stake(amount, pool.periodKey);
+                    await stake(dao.id, amount, pool.periodKey);
                     await fetchData();
                   } catch (e) {
                     console.error(e);
@@ -311,7 +314,7 @@ const ManagementStaking: React.FC = () => {
                   className="flex-1 py-2 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors font-mono"
                   onClick={async () => {
                     try {
-                      await claimRewards(stake.id);
+                      await claimRewards(dao.id, stake.id);
                       await fetchData();
                     } catch (e) {
                       console.error(e);
@@ -324,7 +327,7 @@ const ManagementStaking: React.FC = () => {
                   className="flex-1 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors font-mono"
                   onClick={async () => {
                     try {
-                      await unstake(stake.id);
+                      await unstake(dao.id, stake.id);
                       await fetchData();
                     } catch (e) {
                       console.error(e);
