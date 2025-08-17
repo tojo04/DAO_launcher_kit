@@ -14,15 +14,14 @@ import {
 } from 'lucide-react';
 import { DAO } from '../../types/dao';
 import { useStaking } from '../../hooks/useStaking';
-import { useActors } from '../../context/ActorContext';
 // @ts-ignore - AuthContext is a .jsx file
 import { useAuth } from '../../context/AuthContext';
 import type { Stake, StakingPeriod } from '../../declarations/staking/staking.did';
 
 const ManagementStaking: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
-  const { stake, unstake, claimRewards } = useStaking();
-  const actors = useActors();
+  const { stake, unstake, claimRewards, getStakingStats, getUserStakes } =
+    useStaking();
   const { principal } = useAuth();
 
   const [stakingPools, setStakingPools] = useState<any[]>([]);
@@ -59,14 +58,13 @@ const ManagementStaking: React.FC = () => {
   const formatToken = (amount: bigint): string => amount.toString();
 
   const fetchData = useCallback(async () => {
-    if (!actors?.staking) return;
     try {
       const principalId = principal || undefined;
       const daoId = dao.id;
       const [stats, stakes] = await Promise.all([
-        actors.staking.getStakingStats(daoId),
+        getStakingStats(daoId),
         principalId
-          ? actors.staking.getUserStakes(daoId, principalId)
+          ? getUserStakes(daoId, principalId)
           : Promise.resolve([])
       ]);
 
@@ -98,7 +96,7 @@ const ManagementStaking: React.FC = () => {
     } catch (err) {
       console.error('Failed to fetch staking data', err);
     }
-  }, [actors, principal]);
+  }, [getStakingStats, getUserStakes, principal, dao.id]);
 
   useEffect(() => {
     fetchData();
