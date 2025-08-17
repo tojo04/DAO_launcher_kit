@@ -640,7 +640,13 @@ persistent actor DAOMain {
         }
     };
 
-
+    /**
+     * Create a new proposal for the DAO.
+     *
+     * The proposal's type, optional category and optional voting period are
+     * passed directly to the proposals canister, allowing flexible proposal
+     * creation beyond simple text proposals.
+     */
     public shared(msg) func createProposal(
         daoId: DAOId,
         title: Text,
