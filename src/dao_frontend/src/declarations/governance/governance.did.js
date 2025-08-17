@@ -107,7 +107,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(Vote)],
         ['query'],
       ),
-    'init' : IDL.Func([IDL.Principal, IDL.Principal], [], []),
+    'init' : IDL.Func([IDL.Principal, IDL.Principal, IDL.Text], [], []),
     'updateConfig' : IDL.Func([Principal, GovernanceConfig], [Result], []),
     'vote' : IDL.Func(
         [Principal, ProposalId, VoteChoice, IDL.Opt(IDL.Text)],

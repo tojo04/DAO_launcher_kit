@@ -110,7 +110,7 @@ service : {
   getProposalVotes: (daoId: principal, proposalId: ProposalId) -> (vec Vote) query;
   getProposalsByStatus: (daoId: principal, status: ProposalStatus) -> (vec Proposal) query;
   getUserVote: (daoId: principal, proposalId: ProposalId, user: principal) -> (opt Vote) query;
-  init: (newDaoId: principal, newStakingId: principal) -> ();
+   init: (newDaoId: principal, newStakingId: principal, daoInstanceId: text) -> ();
   updateConfig: (daoId: principal, newConfig: GovernanceConfig) -> (Result);
   vote: (daoId: principal, proposalId: ProposalId, choice: VoteChoice, reason: opt text) ->
    (Result);
