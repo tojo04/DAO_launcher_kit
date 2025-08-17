@@ -52,17 +52,17 @@ export const idlFactory = ({ IDL }) => {
     'status' : IDL.Text,
   });
   return IDL.Service({
-    'addAdmin' : IDL.Func([IDL.Principal], [Result], []),
+    'addAdmin' : IDL.Func([IDL.Text, IDL.Principal], [Result], []),
     'adminRegisterUser' : IDL.Func(
-        [IDL.Principal, IDL.Text, IDL.Text],
+        [IDL.Text, IDL.Principal, IDL.Text, IDL.Text],
         [Result],
         [],
       ),
-    'checkIsAdmin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
-    'createProposal' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [Result_1], []),
-    'getAllUsers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
+    'checkIsAdmin' : IDL.Func([IDL.Text, IDL.Principal], [IDL.Bool], ['query']),
+    'createProposal' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [Result_1], []),
+    'getAllUsers' : IDL.Func([IDL.Text], [IDL.Vec(UserProfile)], ['query']),
     'getCanisterReferences' : IDL.Func(
-        [],
+        [IDL.Text],
         [
           IDL.Record({
             'staking' : IDL.Opt(IDL.Principal),
@@ -73,9 +73,9 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
-    'getDAOConfig' : IDL.Func([], [IDL.Opt(DAOConfig)], ['query']),
+    'getDAOConfig' : IDL.Func([IDL.Text], [IDL.Opt(DAOConfig)], ['query']),
     'getDAOInfo' : IDL.Func(
-        [],
+        [IDL.Text],
         [
           IDL.Record({
             'initialized' : IDL.Bool,
@@ -86,10 +86,10 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
-    'getDAOStats' : IDL.Func([], [DAOStats], ['query']),
-    'getRecentActivity' : IDL.Func([], [IDL.Vec(Activity)], ['query']),
+    'getDAOStats' : IDL.Func([IDL.Text], [DAOStats], ['query']),
+    'getRecentActivity' : IDL.Func([IDL.Text], [IDL.Vec(Activity)], ['query']),
     'getGovernanceStats' : IDL.Func(
-        [],
+        [IDL.Text],
         [
           IDL.Record({
             'passedProposals' : IDL.Nat,
@@ -101,31 +101,31 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'getUserProfile' : IDL.Func(
-        [IDL.Principal],
+        [IDL.Text, IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
-    'greet' : IDL.Func([IDL.Text], [IDL.Text], ['query']),
+    'greet' : IDL.Func([IDL.Text, IDL.Text], [IDL.Text], ['query']),
     'health' : IDL.Func(
         [],
         [IDL.Record({ 'status' : IDL.Text, 'timestamp' : IDL.Int })],
         ['query'],
       ),
     'initialize' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Vec(IDL.Principal)],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Principal)],
         [Result],
         [],
       ),
-    'registerUser' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
-    'removeAdmin' : IDL.Func([IDL.Principal], [Result], []),
+    'registerUser' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [Result], []),
+    'removeAdmin' : IDL.Func([IDL.Text, IDL.Principal], [Result], []),
     'setCanisterReferences' : IDL.Func(
-        [IDL.Principal, IDL.Principal, IDL.Principal, IDL.Principal],
+        [IDL.Text, IDL.Principal, IDL.Principal, IDL.Principal, IDL.Principal],
         [Result],
         [],
       ),
-    'setDAOConfig' : IDL.Func([DAOConfig], [Result], []),
-    'updateUserProfile' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
-    'vote' : IDL.Func([IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)], [Result], []),
+    'setDAOConfig' : IDL.Func([IDL.Text, DAOConfig], [Result], []),
+    'updateUserProfile' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [Result], []),
+    'vote' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)], [Result], []),
   });
 };
 export const init = ({ IDL }) => { return []; };

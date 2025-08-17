@@ -45,8 +45,8 @@ persistent actor GovernanceCanister {
     // Inter-canister communication setup
     // These actor references enable cross-canister calls for governance functionality
     var dao : actor {
-        getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
-        checkIsAdmin: shared query (Principal) -> async Bool;
+        getUserProfile: shared query (Types.DAOId, Principal) -> async ?Types.UserProfile;
+        checkIsAdmin: shared query (Types.DAOId, Principal) -> async Bool;
     } = actor("aaaaa-aa");
 
     var staking : actor {
@@ -66,6 +66,7 @@ persistent actor GovernanceCanister {
     private var configEntries : [(Text, GovernanceConfig)] = [];
     private var daoId : Principal = Principal.fromText("aaaaa-aa");
     private var stakingId : Principal = Principal.fromText("aaaaa-aa");
+    private var daoInstance : Types.DAOId = "";
     private var initialized : Bool = false;
 
     // Runtime storage - rebuilt from stable storage after upgrades
@@ -74,7 +75,7 @@ persistent actor GovernanceCanister {
     private transient var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
     private transient var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
 
-    public shared(msg) func init(newDaoId: Principal, newStakingId: Principal) : async () {
+    public shared(msg) func init(newDaoId: Principal, newStakingId: Principal, daoInstanceId: Types.DAOId) : async () {
         if (initialized) {
             Debug.print("Initialization already completed");
             throw Error.reject("Governance canister already initialized");
@@ -84,10 +85,10 @@ persistent actor GovernanceCanister {
         let caller = msg.caller;
         let self = Principal.fromActor(GovernanceCanister);
         let daoTemp : actor {
-            getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
-            checkIsAdmin: shared query (Principal) -> async Bool;
+            getUserProfile: shared query (Types.DAOId, Principal) -> async ?Types.UserProfile;
+            checkIsAdmin: shared query (Types.DAOId, Principal) -> async Bool;
         } = actor(Principal.toText(newDaoId));
-        let isAdmin = await daoTemp.checkIsAdmin(caller);
+        let isAdmin = await daoTemp.checkIsAdmin(daoInstanceId, caller);
         if (caller != self and not isAdmin) {
             Debug.print("Unauthorized init attempt by " # Principal.toText(caller));
             throw Error.reject("Caller is not authorized to initialize");
@@ -95,6 +96,7 @@ persistent actor GovernanceCanister {
 
         daoId := newDaoId;
         stakingId := newStakingId;
+        daoInstance := daoInstanceId;
         dao := daoTemp;
         staking := actor(Principal.toText(newStakingId));
         initialized := true;
@@ -238,7 +240,7 @@ persistent actor GovernanceCanister {
         };
 
         // Verify voter registration
-        let profileOpt = await dao.getUserProfile(caller);
+        let profileOpt = await dao.getUserProfile(daoInstance, caller);
         switch (profileOpt) {
             case null return #err("User not registered");
             case (?_) {};

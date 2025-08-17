@@ -57,13 +57,13 @@ export interface UserProfile {
   'totalStaked' : bigint,
 }
 export interface _SERVICE {
-  'addAdmin' : ActorMethod<[Principal], Result>,
-  'adminRegisterUser' : ActorMethod<[Principal, string, string], Result>,
-  'checkIsAdmin' : ActorMethod<[Principal], boolean>,
-  'createProposal' : ActorMethod<[string, string, string], Result_1>,
-  'getAllUsers' : ActorMethod<[], Array<UserProfile>>,
+  'addAdmin' : ActorMethod<[string, Principal], Result>,
+  'adminRegisterUser' : ActorMethod<[string, Principal, string, string], Result>,
+  'checkIsAdmin' : ActorMethod<[string, Principal], boolean>,
+  'createProposal' : ActorMethod<[string, string, string, string], Result_1>,
+  'getAllUsers' : ActorMethod<[string], Array<UserProfile>>,
   'getCanisterReferences' : ActorMethod<
-    [],
+    [string],
     {
       'staking' : [] | [Principal],
       'governance' : [] | [Principal],
@@ -71,9 +71,9 @@ export interface _SERVICE {
       'treasury' : [] | [Principal],
     }
   >,
-  'getDAOConfig' : ActorMethod<[], [] | [DAOConfig]>,
+  'getDAOConfig' : ActorMethod<[string], [] | [DAOConfig]>,
   'getDAOInfo' : ActorMethod<
-    [],
+    [string],
     {
       'initialized' : boolean,
       'name' : string,
@@ -81,10 +81,10 @@ export interface _SERVICE {
       'totalMembers' : bigint,
     }
   >,
-  'getDAOStats' : ActorMethod<[], DAOStats>,
-  'getRecentActivity' : ActorMethod<[], Array<Activity>>,
+  'getDAOStats' : ActorMethod<[string], DAOStats>,
+  'getRecentActivity' : ActorMethod<[string], Array<Activity>>,
   'getGovernanceStats' : ActorMethod<
-    [],
+    [string],
     {
       'passedProposals' : bigint,
       'totalVotingPower' : bigint,
@@ -92,19 +92,19 @@ export interface _SERVICE {
       'activeProposals' : bigint,
     }
   >,
-  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
-  'greet' : ActorMethod<[string], string>,
+  'getUserProfile' : ActorMethod<[string, Principal], [] | [UserProfile]>,
+  'greet' : ActorMethod<[string, string], string>,
   'health' : ActorMethod<[], { 'status' : string, 'timestamp' : bigint }>,
-  'initialize' : ActorMethod<[string, string, Array<Principal>], Result>,
-  'registerUser' : ActorMethod<[string, string], Result>,
-  'removeAdmin' : ActorMethod<[Principal], Result>,
+  'initialize' : ActorMethod<[string, string, string, Array<Principal>], Result>,
+  'registerUser' : ActorMethod<[string, string, string], Result>,
+  'removeAdmin' : ActorMethod<[string, Principal], Result>,
   'setCanisterReferences' : ActorMethod<
-    [Principal, Principal, Principal, Principal],
+    [string, Principal, Principal, Principal, Principal],
     Result
   >,
-  'setDAOConfig' : ActorMethod<[DAOConfig], Result>,
-  'updateUserProfile' : ActorMethod<[string, string], Result>,
-  'vote' : ActorMethod<[bigint, string, [] | [string]], Result>,
+  'setDAOConfig' : ActorMethod<[string, DAOConfig], Result>,
+  'updateUserProfile' : ActorMethod<[string, string, string], Result>,
+  'vote' : ActorMethod<[string, bigint, string, [] | [string]], Result>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

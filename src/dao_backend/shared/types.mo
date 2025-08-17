@@ -10,6 +10,9 @@ module {
     public type Time = Time.Time;
     public type Principal = Principal.Principal;
 
+    // Identifier used for addressing individual DAOs
+    public type DAOId = Text;
+
     // User and Identity types
     public type UserId = Principal;
     
