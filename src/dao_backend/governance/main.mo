@@ -203,6 +203,21 @@ persistent actor GovernanceCanister {
 
         let caller = msg.caller;
 
+        // Verify proposer registration using the DAO backend actor
+        let daoActor = switch (dao) {
+            case (?d) d;
+            case null return #err("Canister not initialized");
+        };
+        let instanceId = switch (daoInstance) {
+            case (?id) id;
+            case null return #err("Canister not initialized");
+        };
+        let profileOpt = await daoActor.getUserProfile(instanceId, caller);
+        switch (profileOpt) {
+            case null return #err("User not registered");
+            case (?_) {};
+        };
+
         // Check if user has too many active proposals in this DAO
         let activeProposals = getActiveProposalsByUser(daoId, caller);
         let currentConfig = getConfigForDao(daoId);
