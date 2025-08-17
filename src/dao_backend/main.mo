@@ -770,6 +770,9 @@ persistent actor DAOMain {
         if (not state.initialized) {
             return #err("DAO not initialized");
         };
+        if (state.adminPrincipals.size() <= 1) {
+            return #err("Cannot remove the last admin");
+        };
         state.adminPrincipals.delete(adminToRemove);
         Debug.print("Admin removed: " # Principal.toText(adminToRemove));
         #ok()
