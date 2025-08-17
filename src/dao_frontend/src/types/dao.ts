@@ -45,6 +45,7 @@ export interface DAOFormData {
   description: string;
   category: string;
   website: string;
+  logo?: string;
   selectedModules: string[];
   selectedFeatures: Record<string, Record<string, boolean>>;
   tokenName: string;
