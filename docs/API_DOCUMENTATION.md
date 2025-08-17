@@ -178,7 +178,7 @@ Retrieves comprehensive DAO statistics.
   activeProposals: 3,
   totalStaked: 50000,
   treasuryBalance: 75000,
-  governanceParticipation: 85.5
+  totalVotes: 1200
 }
 ```
 

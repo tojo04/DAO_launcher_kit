@@ -102,7 +102,7 @@ const DAOStatus = () => {
                 <li>Active Proposals: {stats.activeProposals?.toString()}</li>
                 <li>Total Staked: {stats.totalStaked?.toString()}</li>
                 <li>Treasury Balance: {stats.treasuryBalance?.toString()}</li>
-                <li>Total Voting Power: {stats.totalVotingPower?.toString()}</li>
+                <li>Total Votes: {stats.totalVotes?.toString()}</li>
               </ul>
             ) : (
               <p className="text-gray-400">No stats available.</p>

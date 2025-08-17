@@ -33,8 +33,8 @@ record {
    totalMembers: nat;
    totalProposals: nat;
    totalStaked: TokenAmount;
-   totalVotingPower: nat;
    treasuryBalance: TokenAmount;
+   totalVotes: nat;
 };
 type Activity =
  record {

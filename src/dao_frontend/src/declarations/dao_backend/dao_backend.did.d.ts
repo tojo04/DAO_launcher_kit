@@ -22,7 +22,7 @@ export interface DAOConfig {
 }
 export interface DAOStats {
   'treasuryBalance' : TokenAmount,
-  'totalVotingPower' : bigint,
+  'totalVotes' : bigint,
   'totalProposals' : bigint,
   'totalMembers' : bigint,
   'totalStaked' : TokenAmount,
