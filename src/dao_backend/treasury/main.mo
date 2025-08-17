@@ -11,8 +11,35 @@ import Float "mo:base/Float";
 import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Nat32 "mo:base/Nat32";
+import Nat64 "mo:base/Nat64";
+import Blob "mo:base/Blob";
 
 import Types "../shared/types";
+
+module ICRC1 {
+    public type Account = { owner: Principal; subaccount: ?[Nat8] };
+    public type TransferArgs = {
+        from_subaccount: ?[Nat8];
+        to: Account;
+        amount: Nat;
+        fee: ?Nat;
+        memo: ?Blob;
+        created_at_time: ?Nat64;
+    };
+    public type TransferError = {
+        #BadFee: { expected_fee: Nat };
+        #InsufficientFunds: { balance: Nat };
+        #TxTooOld: { allowed_window_nanos: Nat64 };
+        #TxCreatedInFuture: { ledger_time: Nat64 };
+        #TxDuplicate: { duplicate_of: Nat };
+        #BadBurn: { min_burn_amount: Nat };
+        #GenericError: { error_code: Nat; message: Text };
+    };
+    public type TransferResult = { #Ok: Nat; #Err: TransferError };
+    public type Service = actor {
+        icrc1_transfer: TransferArgs -> async TransferResult;
+    };
+};
 
 /**
  * Treasury Canister
@@ -51,6 +78,7 @@ persistent actor TreasuryCanister {
     private var transactionsEntries : [(Nat, TreasuryTransaction)] = [];
     private var allowancesEntries : [(Principal, TokenAmount)] = [];
     private var authorizedPrincipalsEntries : [(Principal, [Principal])] = [];
+    private var ledgerCanister : ?Principal = null;
 
     // Runtime storage - rebuilt from stable storage after upgrades
     // HashMaps provide efficient transaction and allowance management
@@ -103,31 +131,64 @@ persistent actor TreasuryCanister {
             return #err("Amount must be greater than 0");
         };
 
+        let ledger = switch (getLedger()) {
+            case (#ok(l)) l;
+            case (#err(e)) { return #err(e) };
+        };
+
+        let transferArgs : ICRC1.TransferArgs = {
+            from_subaccount = null;
+            to = { owner = Principal.fromActor(TreasuryCanister); subaccount = null };
+            amount = amount;
+            fee = null;
+            memo = null;
+            created_at_time = null;
+        };
+
         let transactionId = nextTransactionId;
         nextTransactionId += 1;
 
-        let transaction : TreasuryTransaction = {
-            id = transactionId;
-            daoId = daoId;
+        switch (await ledger.icrc1_transfer(transferArgs)) {
+            case (#Ok(_)) {
+                let transaction : TreasuryTransaction = {
+                    id = transactionId;
+                    daoId = daoId;
 
-            transactionType = #deposit;
-            amount = amount;
-            from = ?msg.caller;
-            to = null;
-            timestamp = Time.now();
-            proposalId = null;
-            description = description;
-            status = #completed;
-        };
+                    transactionType = #deposit;
+                    amount = amount;
+                    from = ?msg.caller;
+                    to = null;
+                    timestamp = Time.now();
+                    proposalId = null;
+                    description = description;
+                    status = #completed;
+                };
 
+                transactions.put(transactionId, transaction);
 
-        transactions.put(transactionId, transaction);
+                // Update balances
+                let bal = getBalanceInternal(daoId);
+                balances.put(daoId, { bal with total = bal.total + amount; available = bal.available + amount });
 
-        // Update balances
-        let bal = getBalanceInternal(daoId);
-        balances.put(daoId, { bal with total = bal.total + amount; available = bal.available + amount });
-
-        #ok(transactionId)
+                #ok(transactionId)
+            };
+            case (#Err(err)) {
+                let failedTx : TreasuryTransaction = {
+                    id = transactionId;
+                    daoId = daoId;
+                    transactionType = #deposit;
+                    amount = amount;
+                    from = ?msg.caller;
+                    to = null;
+                    timestamp = Time.now();
+                    proposalId = null;
+                    description = description;
+                    status = #failed;
+                };
+                transactions.put(transactionId, failedTx);
+                #err("Ledger transfer failed: " # transferErrorToText(err))
+            };
+        }
     };
 
     // Withdraw tokens from treasury (requires authorization)
@@ -477,6 +538,15 @@ persistent actor TreasuryCanister {
     };
 
     // Administrative functions
+    // Configure ledger canister
+    public shared(_msg) func setLedgerCanister(canister: Principal) : async Result<(), Text> {
+        ledgerCanister := ?canister;
+        #ok()
+    };
+
+    public query func getLedgerCanister() : async ?Principal {
+        ledgerCanister
+    };
 
     // Add authorized principal
     public shared(_msg) func addAuthorizedPrincipal(daoId: Principal, principal: Principal) : async Result<(), Text> {
@@ -539,9 +609,67 @@ persistent actor TreasuryCanister {
         }
     };
 
+    private func getLedger() : Result<ICRC1.Service, Text> {
+        switch (ledgerCanister) {
+            case (?p) { #ok(actor(Principal.toText(p)) : ICRC1.Service) };
+            case null { #err("Ledger canister not configured") };
+        }
+    };
+
+    private func transferErrorToText(e: ICRC1.TransferError) : Text {
+        switch (e) {
+            case (#BadFee { expected_fee }) {
+                "Bad fee: expected " # Nat.toText(expected_fee)
+            };
+            case (#InsufficientFunds { balance }) {
+                "Insufficient funds: balance " # Nat.toText(balance)
+            };
+            case (#TxTooOld { allowed_window_nanos }) {
+                "Transaction too old: " # Nat64.toText(allowed_window_nanos)
+            };
+            case (#TxCreatedInFuture { ledger_time }) {
+                "Transaction created in future: " # Nat64.toText(ledger_time)
+            };
+            case (#TxDuplicate { duplicate_of }) {
+                "Duplicate transaction: " # Nat.toText(duplicate_of)
+            };
+            case (#BadBurn { min_burn_amount }) {
+                "Bad burn: minimum " # Nat.toText(min_burn_amount)
+            };
+            case (#GenericError { error_code; message }) {
+                "Generic error " # Nat.toText(error_code) # ": " # message
+            };
+        }
+    };
+
     private func executeWithdrawal(_transactionId: Nat) : async Result<(), Text> {
-        // In a real implementation, this would interact with the ledger canister
-        // For now, we'll simulate a successful withdrawal
-        #ok()
+        let txOpt = transactions.get(_transactionId);
+        switch (txOpt) {
+            case (?tx) {
+                let ledger = switch (getLedger()) {
+                    case (#ok(l)) l;
+                    case (#err(e)) { return #err(e) };
+                };
+
+                switch (tx.to) {
+                    case (?recipient) {
+                        let args : ICRC1.TransferArgs = {
+                            from_subaccount = null;
+                            to = { owner = recipient; subaccount = null };
+                            amount = tx.amount;
+                            fee = null;
+                            memo = null;
+                            created_at_time = null;
+                        };
+                        switch (await ledger.icrc1_transfer(args)) {
+                            case (#Ok(_)) { #ok() };
+                            case (#Err(err)) { #err(transferErrorToText(err)) };
+                        }
+                    };
+                    case null { #err("Recipient not specified") };
+                }
+            };
+            case null { #err("Transaction not found") };
+        }
     };
 }
