@@ -397,16 +397,92 @@ persistent actor DAOMain {
         }
     };
 
-    public query func getDAOStats(daoId: DAOId) : async DAOStats {
+    public shared query func getDAOStats(daoId: DAOId) : async DAOStats {
         switch (daoStates.get(daoId)) {
             case (?state) {
+                let daoPrincipal = Principal.fromText(daoId);
+
+                var totalProposals : Nat = 0;
+                var activeProposals : Nat = 0;
+                var totalStaked : TokenAmount = 0;
+                var treasuryBalance : TokenAmount = 0;
+                var totalVotingPower : Nat = 0;
+
+                // Proposals statistics
+                switch (state.proposalsCanister) {
+                    case (?canisterId) {
+                        let proposals : actor {
+                            getProposalStats: shared query (Principal) -> async {
+                                totalProposals: Nat;
+                                activeProposals: Nat;
+                            };
+                        } = actor(Principal.toText(canisterId));
+                        try {
+                            let stats = await proposals.getProposalStats(daoPrincipal);
+                            totalProposals := stats.totalProposals;
+                            activeProposals := stats.activeProposals;
+                        } catch (_) {};
+                    };
+                    case null {};
+                };
+
+                // Governance statistics
+                switch (state.governanceCanister) {
+                    case (?canisterId) {
+                        let governance : actor {
+                            getGovernanceStats: shared query (Principal) -> async {
+                                totalVotes: Nat;
+                            };
+                        } = actor(Principal.toText(canisterId));
+                        try {
+                            let stats = await governance.getGovernanceStats(daoPrincipal);
+                            totalVotingPower := stats.totalVotes;
+                        } catch (_) {};
+                    };
+                    case null {};
+                };
+
+                // Staking statistics
+                switch (state.stakingCanister) {
+                    case (?canisterId) {
+                        let staking : actor {
+                            getStakingStats: shared query (Principal) -> async {
+                                totalStakedAmount: TokenAmount;
+                            };
+                        } = actor(Principal.toText(canisterId));
+                        try {
+                            let stats = await staking.getStakingStats(daoPrincipal);
+                            totalStaked := stats.totalStakedAmount;
+                        } catch (_) {};
+                    };
+                    case null {};
+                };
+
+                // Treasury statistics
+                switch (state.treasuryCanister) {
+                    case (?canisterId) {
+                        let treasury : actor {
+                            getTreasuryStats: shared query (Principal) -> async {
+                                balance: {
+                                    total: TokenAmount;
+                                };
+                            };
+                        } = actor(Principal.toText(canisterId));
+                        try {
+                            let stats = await treasury.getTreasuryStats(daoPrincipal);
+                            treasuryBalance := stats.balance.total;
+                        } catch (_) {};
+                    };
+                    case null {};
+                };
+
                 {
                     totalMembers = state.totalMembers;
-                    totalProposals = 0;
-                    activeProposals = 0;
-                    totalStaked = 0;
-                    treasuryBalance = 0;
-                    totalVotingPower = 0;
+                    totalProposals = totalProposals;
+                    activeProposals = activeProposals;
+                    totalStaked = totalStaked;
+                    treasuryBalance = treasuryBalance;
+                    totalVotingPower = totalVotingPower;
                 }
             };
             case null {
