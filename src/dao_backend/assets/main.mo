@@ -11,13 +11,15 @@ import Text "mo:base/Text";
 import Blob "mo:base/Blob";
 import Nat32 "mo:base/Nat32";
 
+import Types "../shared/types";
+
 persistent actor AssetCanister {
     type Result<T, E> = Result.Result<T, E>;
     type Time = Time.Time;
 
     // Asset types
     public type AssetId = Nat;
-    public type DaoId = Principal;
+    public type DaoId = Types.DAOId;
     public type AssetData = Blob;
 
     public type AssetKey = {
@@ -70,11 +72,11 @@ persistent actor AssetCanister {
 
     // Runtime storage
     private func assetKeyEqual(a: AssetKey, b: AssetKey) : Bool {
-        a.daoId == b.daoId and a.assetId == b.assetId
+        Text.equal(a.daoId, b.daoId) and a.assetId == b.assetId
     };
 
     private func assetKeyHash(k: AssetKey) : Nat32 {
-        Nat32.xor(Principal.hash(k.daoId), Nat32.fromNat(k.assetId))
+        Nat32.xor(Text.hash(k.daoId), Nat32.fromNat(k.assetId))
     };
 
     private type UploaderKey = {
@@ -83,11 +85,11 @@ persistent actor AssetCanister {
     };
 
     private func uploaderKeyEqual(a: UploaderKey, b: UploaderKey) : Bool {
-        a.daoId == b.daoId and a.uploader == b.uploader
+        Text.equal(a.daoId, b.daoId) and a.uploader == b.uploader
     };
 
     private func uploaderKeyHash(k: UploaderKey) : Nat32 {
-        Nat32.xor(Principal.hash(k.daoId), Principal.hash(k.uploader))
+        Nat32.xor(Text.hash(k.daoId), Principal.hash(k.uploader))
     };
 
     private transient var assets = HashMap.HashMap<AssetKey, Asset>(100, assetKeyEqual, assetKeyHash);
@@ -264,7 +266,7 @@ persistent actor AssetCanister {
     public query func getPublicAssets(daoId: DaoId) : async [AssetMetadata] {
         let publicAssets = Buffer.Buffer<AssetMetadata>(0);
         for ((key, asset) in assets.entries()) {
-            if (key.daoId == daoId and asset.isPublic) {
+            if (Text.equal(key.daoId, daoId) and asset.isPublic) {
                 publicAssets.add({
                     id = asset.id;
                     daoId = asset.daoId;
@@ -317,7 +319,7 @@ persistent actor AssetCanister {
     public query func searchAssetsByTag(daoId: DaoId, tag: Text) : async [AssetMetadata] {
         let matchingAssets = Buffer.Buffer<AssetMetadata>(0);
         for ((key, asset) in assets.entries()) {
-            if (key.daoId == daoId and asset.isPublic) {
+            if (Text.equal(key.daoId, daoId) and asset.isPublic) {
                 let hasTag = Array.find<Text>(asset.tags, func(t) = t == tag);
                 if (hasTag != null) {
                     matchingAssets.add({
@@ -415,7 +417,7 @@ persistent actor AssetCanister {
         var totalAssets : Nat = 0;
         var daoStorage : Nat = 0;
         for ((key, asset) in assets.entries()) {
-            if (key.daoId == daoId) {
+            if (Text.equal(key.daoId, daoId)) {
                 totalAssets += 1;
                 daoStorage += asset.size;
             };
@@ -520,7 +522,7 @@ persistent actor AssetCanister {
     // Get asset by name (for convenience)
     public query func getAssetByName(daoId: DaoId, name: Text) : async ?AssetMetadata {
         for ((key, asset) in assets.entries()) {
-            if (key.daoId == daoId and asset.name == name and asset.isPublic) {
+            if (Text.equal(key.daoId, daoId) and asset.name == name and asset.isPublic) {
                 return ?{
                     id = asset.id;
                     daoId = asset.daoId;

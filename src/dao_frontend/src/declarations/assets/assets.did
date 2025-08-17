@@ -16,8 +16,8 @@ type Result =
  };
 type AssetMetadata =
  record {
-   contentType: text;
-   daoId: principal;
+  contentType: text;
+   daoId: DaoId;
    id: AssetId;
    isPublic: bool;
    name: text;
@@ -27,7 +27,7 @@ type AssetMetadata =
    uploadedBy: principal;
  };
 type AssetId = nat;
-type DaoId = principal;
+type DaoId = text;
 type AssetData = blob;
 type Asset =
  record {
