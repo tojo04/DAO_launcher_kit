@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Principal } from '@dfinity/principal';
 import { useActors } from '../context/ActorContext';
 
 export const useStaking = () => {
@@ -128,7 +129,10 @@ export const useStaking = () => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.staking.getUserStakes(daoId, user);
+      return await actors.staking.getUserStakes(
+        daoId,
+        Principal.fromText(user)
+      );
     } catch (err) {
       setError(err.message);
       throw err;
@@ -141,7 +145,10 @@ export const useStaking = () => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.staking.getUserActiveStakes(daoId, user);
+      return await actors.staking.getUserActiveStakes(
+        daoId,
+        Principal.fromText(user)
+      );
     } catch (err) {
       setError(err.message);
       throw err;
@@ -156,7 +163,7 @@ export const useStaking = () => {
     try {
       return await actors.staking.getUserStakingSummary(
         daoId,
-        user
+        Principal.fromText(user)
       );
     } catch (err) {
       setError(err.message);

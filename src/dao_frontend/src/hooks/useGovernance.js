@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Principal } from '@dfinity/principal';
 import { useActors } from '../context/ActorContext';
 import { useDAO } from '../context/DAOContext';
 
@@ -191,7 +192,7 @@ export const useGovernance = () => {
       const res = await actors.governance.getUserVote(
         getDaoId(),
         BigInt(proposalId),
-        user
+        Principal.fromText(user)
       );
       return res && res.length ? res[0] : null;
     } catch (err) {
