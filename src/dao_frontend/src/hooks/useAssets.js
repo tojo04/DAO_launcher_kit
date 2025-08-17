@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Principal } from '@dfinity/principal';
 import { useActors } from '../context/ActorContext';
 
 export const useAssets = () => {
@@ -172,7 +171,7 @@ export const useAssets = () => {
     setError(null);
     try {
       const res = await actors.assets.getAuthorizedUploaders();
-      return res.map((p) => p.toText());
+      return res.map((p) => (typeof p.toText === 'function' ? p.toText() : p));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -185,9 +184,7 @@ export const useAssets = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.assets.addAuthorizedUploader(
-        Principal.fromText(principal)
-      );
+      const res = await actors.assets.addAuthorizedUploader(principal);
       if (res.err) {
         throw new Error(res.err);
       }
@@ -204,9 +201,7 @@ export const useAssets = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.assets.removeAuthorizedUploader(
-        Principal.fromText(principal)
-      );
+      const res = await actors.assets.removeAuthorizedUploader(principal);
       if (res.err) {
         throw new Error(res.err);
       }

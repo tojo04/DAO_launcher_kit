@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useActors } from '../context/ActorContext';
-import { Principal } from '@dfinity/principal';
 
 export const useTreasury = () => {
   const actors = useActors();
@@ -30,10 +29,9 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
-      const principal = Principal.fromText(recipient);
       const res = await actors.treasury.withdraw(
         daoId,
-        principal,
+        recipient,
         BigInt(amount),
         description,
         []
@@ -200,10 +198,9 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
-      const principal = Principal.fromText(principalId);
       const res = await actors.treasury.addAuthorizedPrincipal(
         daoId,
-        principal
+        principalId
       );
       if ('err' in res) throw new Error(res.err);
       return res.ok;
@@ -219,10 +216,9 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
-      const principal = Principal.fromText(principalId);
       const res = await actors.treasury.removeAuthorizedPrincipal(
         daoId,
-        principal
+        principalId
       );
       if ('err' in res) throw new Error(res.err);
       return res.ok;
