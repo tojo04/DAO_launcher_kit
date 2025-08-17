@@ -666,9 +666,9 @@ persistent actor DAOMain {
                             Principal.fromText(daoId),
                             title,
                             description,
-                            #textProposal(description),
-                            null,
-                            null
+                            proposalType,
+                            category,
+                            votingPeriod
                         );
                         res
                     };
