@@ -22,6 +22,11 @@ export const useGovernance = () => {
     proposalType,
     votingPeriod
   ) => {
+    if (!actors?.governance) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -43,6 +48,11 @@ export const useGovernance = () => {
   };
 
   const vote = async (proposalId, choice, reason) => {
+    if (!actors?.governance) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -64,6 +74,11 @@ export const useGovernance = () => {
   };
 
   const getConfig = async () => {
+    if (!actors?.governance) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -78,6 +93,11 @@ export const useGovernance = () => {
   };
 
   const getGovernanceStats = async () => {
+    if (!actors?.governance) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -92,6 +112,11 @@ export const useGovernance = () => {
   };
 
   const executeProposal = async (proposalId) => {
+    if (!actors?.governance) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -110,6 +135,11 @@ export const useGovernance = () => {
   };
 
   const getActiveProposals = async () => {
+    if (!actors?.governance) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -123,6 +153,11 @@ export const useGovernance = () => {
   };
 
   const getAllProposals = async () => {
+    if (!actors?.governance) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -136,6 +171,11 @@ export const useGovernance = () => {
   };
 
   const getProposal = async (proposalId) => {
+    if (!actors?.governance) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -153,6 +193,11 @@ export const useGovernance = () => {
   };
 
   const getProposalVotes = async (proposalId) => {
+    if (!actors?.governance) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -169,6 +214,11 @@ export const useGovernance = () => {
   };
 
   const getProposalsByStatus = async (status) => {
+    if (!actors?.governance) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -186,6 +236,11 @@ export const useGovernance = () => {
   };
 
   const getUserVote = async (proposalId, user) => {
+    if (!actors?.governance) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -204,6 +259,11 @@ export const useGovernance = () => {
   };
 
   const updateConfig = async (newConfig) => {
+    if (!actors?.governance) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {

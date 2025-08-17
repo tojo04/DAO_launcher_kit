@@ -15,6 +15,11 @@ export const useProposals = () => {
     category,
     votingPeriod
   ) => {
+    if (!actors?.proposals) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -37,6 +42,11 @@ export const useProposals = () => {
   };
 
   const getAllProposals = async (daoId) => {
+    if (!actors?.proposals) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -50,6 +60,11 @@ export const useProposals = () => {
   };
 
   const getProposalsByCategory = async (daoId, category) => {
+    if (!actors?.proposals) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -63,6 +78,11 @@ export const useProposals = () => {
   };
 
   const getProposalTemplates = async (daoId) => {
+    if (!actors?.proposals) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -76,6 +96,11 @@ export const useProposals = () => {
   };
 
   const vote = async (daoId, proposalId, choice, reason) => {
+    if (!actors?.proposals) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {

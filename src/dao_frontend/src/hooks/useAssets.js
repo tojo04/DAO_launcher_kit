@@ -8,6 +8,11 @@ export const useAssets = () => {
   const [error, setError] = useState(null);
 
   const uploadAsset = async (daoId, file, isPublic = true, tags = []) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -34,6 +39,11 @@ export const useAssets = () => {
   };
 
   const getAsset = async (daoId, assetId) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -54,6 +64,11 @@ export const useAssets = () => {
   };
 
   const getAssetMetadata = async (daoId, assetId) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -70,6 +85,11 @@ export const useAssets = () => {
   };
 
   const getPublicAssets = async (daoId) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -83,6 +103,11 @@ export const useAssets = () => {
   };
 
   const getUserAssets = async (daoId) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -96,6 +121,11 @@ export const useAssets = () => {
   };
 
   const searchAssetsByTag = async (daoId, tag) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -112,6 +142,11 @@ export const useAssets = () => {
   };
 
   const deleteAsset = async (daoId, assetId) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -132,6 +167,11 @@ export const useAssets = () => {
   };
 
   const updateAssetMetadata = async (daoId, assetId, { name = null, isPublic = null, tags = null }) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -155,6 +195,11 @@ export const useAssets = () => {
   };
 
   const getStorageStats = async (daoId) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -168,6 +213,11 @@ export const useAssets = () => {
   };
 
   const getAuthorizedUploaders = async () => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -182,6 +232,11 @@ export const useAssets = () => {
   };
 
   const addAuthorizedUploader = async (principal) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -201,6 +256,11 @@ export const useAssets = () => {
   };
 
   const removeAuthorizedUploader = async (principal) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -223,6 +283,11 @@ export const useAssets = () => {
     maxFileSizeNew = null,
     maxTotalStorageNew = null
   ) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -243,6 +308,11 @@ export const useAssets = () => {
   };
 
   const getSupportedContentTypes = async () => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -256,6 +326,11 @@ export const useAssets = () => {
   };
 
   const getAssetByName = async (daoId, name) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -272,6 +347,11 @@ export const useAssets = () => {
   };
 
   const batchUploadAssets = async (daoId, files) => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -295,6 +375,11 @@ export const useAssets = () => {
   };
 
   const getHealth = async () => {
+    if (!actors?.assets) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
