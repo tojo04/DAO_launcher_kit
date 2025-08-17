@@ -1,6 +1,6 @@
 type UserProfile =
  record {
-  daoId: principal;
+  daoId: text;
   bio: text;
   displayName: text;
   id: UserId;

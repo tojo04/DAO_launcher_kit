@@ -17,7 +17,7 @@ module {
     public type UserId = Principal;
     
     public type UserProfile = {
-        daoId: Principal;
+        daoId: DAOId;
         id: UserId;
         displayName: Text;
         bio: Text;
