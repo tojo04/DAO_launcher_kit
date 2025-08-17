@@ -524,14 +524,9 @@ persistent actor StakingCanister {
     };
 
     // Set or update admin principals for a DAO
-    public shared(msg) func setAdminPrincipals(daoId: Principal, admins: [Principal]) : async Result<(), Text> {
-        switch (adminPrincipals.get(daoId)) {
-            case (?existing) {
-                if (Array.find<Principal>(existing, func(p) = p == msg.caller) == null) {
-                    return #err("Not authorized");
-                };
-            };
-            case null {};
+    public shared(msg) func setAdminPrincipals(daoId: Principal, daoCanister: Principal, admins: [Principal]) : async Result<(), Text> {
+        if (not canSetAdminList(daoId, msg.caller, daoCanister)) {
+            return #err("Not authorized");
         };
         adminPrincipals.put(daoId, admins);
         #ok()
@@ -542,6 +537,13 @@ persistent actor StakingCanister {
         switch (adminPrincipals.get(daoId)) {
             case (?arr) { Array.find<Principal>(arr, func(p) = p == principal) != null };
             case null false;
+        }
+    };
+
+    private func canSetAdminList(daoId: Principal, caller: Principal, daoCanister: Principal) : Bool {
+        switch (adminPrincipals.get(daoId)) {
+            case (?existing) { Array.find<Principal>(existing, func(p) = p == caller) != null };
+            case null caller == daoCanister;
         }
     };
 
