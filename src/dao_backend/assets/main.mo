@@ -17,7 +17,7 @@ persistent actor AssetCanister {
 
     // Asset types
     public type AssetId = Nat;
-    public type DaoId = Nat;
+    public type DaoId = Principal;
     public type AssetData = Blob;
 
     public type AssetKey = {
@@ -74,7 +74,7 @@ persistent actor AssetCanister {
     };
 
     private func assetKeyHash(k: AssetKey) : Nat32 {
-        Nat32.fromNat(k.daoId * 1_000_003 + k.assetId)
+        Nat32.xor(Principal.hash(k.daoId), Nat32.fromNat(k.assetId))
     };
 
     private type UploaderKey = {
@@ -87,7 +87,7 @@ persistent actor AssetCanister {
     };
 
     private func uploaderKeyHash(k: UploaderKey) : Nat32 {
-        Nat32.xor(Nat32.fromNat(k.daoId), Principal.hash(k.uploader))
+        Nat32.xor(Principal.hash(k.daoId), Principal.hash(k.uploader))
     };
 
     private transient var assets = HashMap.HashMap<AssetKey, Asset>(100, assetKeyEqual, assetKeyHash);

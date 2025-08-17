@@ -13,7 +13,7 @@ actor {
 
         // Upload should fail while no authorized uploaders exist.
         let data = Blob.fromArray([1,2,3]);
-        let uploadBefore = await Asset.uploadAsset(1, "test", "image/png", data, true, []);
+        let uploadBefore = await Asset.uploadAsset(selfPrincipal, "test", "image/png", data, true, []);
         assert uploadBefore == #err("Uploads are disabled until an uploader is authorized or open uploads are enabled");
 
         // Anyone can authorize the first uploader.
@@ -24,7 +24,7 @@ actor {
         assert Array.find<Principal>(uploaders, func(p) = p == selfPrincipal) != null;
 
         // After authorization, upload succeeds.
-        let uploadAfter = await Asset.uploadAsset(1, "test2", "image/png", data, true, []);
+        let uploadAfter = await Asset.uploadAsset(selfPrincipal, "test2", "image/png", data, true, []);
         switch uploadAfter { case (#ok(_)) {}; case (_) { assert false } };
 
         let duplicateRes = await Asset.addAuthorizedUploader(selfPrincipal);
