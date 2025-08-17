@@ -397,10 +397,10 @@ persistent actor StakingCanister {
     public query func getStakingStats(daoId: Principal) : async {
         totalStakes: Nat;
         activeStakes: Nat;
-        totalStakedAmount: TokenAmount;
-        totalRewardsDistributed: TokenAmount;
-        averageStakeAmount: Float;
-        stakingPeriodDistribution: [(StakingPeriod, Nat)];
+       totalStakedAmount: TokenAmount;
+       totalRewardsDistributed: TokenAmount;
+       averageStakeAmount: Float;
+       stakingPeriodDistribution: [(StakingPeriod, Nat)];
     } {
         var totalStakesDao : Nat = 0;
         var activeStakesDao : Nat = 0;
@@ -447,6 +447,40 @@ persistent actor StakingCanister {
                 (#locked180, locked180Count),
                 (#locked365, locked365Count)
             ];
+        }
+    };
+
+    // Recent staking activity
+    public query func getRecentActivity() : async [Types.Activity] {
+        let buf = Buffer.Buffer<Types.Activity>(0);
+        for (stake in stakes.vals()) {
+            let periodText = switch (stake.stakingPeriod) {
+                case (#instant) "instant";
+                case (#locked30) "locked30";
+                case (#locked90) "locked90";
+                case (#locked180) "locked180";
+                case (#locked365) "locked365";
+            };
+            let statusText = if (stake.isActive) { "active" } else { "ended" };
+            buf.add({
+                activityType = "stake";
+                title = "Stake " # Nat.toText(stake.amount) # " tokens";
+                description = "period: " # periodText;
+                timestamp = stake.stakedAt;
+                status = statusText;
+            });
+        };
+
+        let all = Buffer.toArray(buf);
+        let sorted = Array.sort(all, func(a: Types.Activity, b: Types.Activity) : { #less; #equal; #greater } {
+            if (a.timestamp > b.timestamp) { #less } else if (a.timestamp < b.timestamp) { #greater } else { #equal }
+        });
+
+        let limit = 20;
+        if (sorted.size() <= limit) {
+            sorted
+        } else {
+            Array.tabulate<Types.Activity>(limit, func(i) = sorted[i])
         }
     };
 

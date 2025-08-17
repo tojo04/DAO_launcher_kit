@@ -424,6 +424,49 @@ persistent actor TreasuryCanister {
         }
     };
 
+    // Convert recent transactions into activity records
+    public query func getRecentActivity() : async [Types.Activity] {
+        let txBuffer = Buffer.Buffer<TreasuryTransaction>(0);
+        for (tx in transactions.vals()) {
+            txBuffer.add(tx);
+        };
+        let allTx = Buffer.toArray(txBuffer);
+        let sortedTx = Array.sort(allTx, func(a: TreasuryTransaction, b: TreasuryTransaction) : {#less; #equal; #greater} {
+            if (a.timestamp > b.timestamp) #less
+            else if (a.timestamp < b.timestamp) #greater
+            else #equal
+        });
+
+        let limit = 20;
+        let selected = if (sortedTx.size() <= limit) {
+            sortedTx
+        } else {
+            Array.tabulate<TreasuryTransaction>(limit, func(i) = sortedTx[i])
+        };
+
+        Array.map<TreasuryTransaction, Types.Activity>(selected, func(tx) : Types.Activity {
+            let typeText = switch (tx.transactionType) {
+                case (#deposit) "deposit";
+                case (#withdrawal) "withdrawal";
+                case (#proposalExecution) "proposalExecution";
+                case (#stakingReward) "stakingReward";
+                case (#fee) "fee";
+            };
+            let statusText = switch (tx.status) {
+                case (#pending) "pending";
+                case (#completed) "completed";
+                case (#failed) "failed";
+            };
+            {
+                activityType = typeText;
+                title = typeText;
+                description = tx.description;
+                timestamp = tx.timestamp;
+                status = statusText;
+            }
+        })
+    };
+
     // Get treasury statistics
     public query func getTreasuryStats(daoId: Principal) : async {
         totalTransactions: Nat;
