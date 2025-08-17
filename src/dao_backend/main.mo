@@ -695,16 +695,16 @@ persistent actor DAOMain {
         switch (state.proposalsCanister) {
             case null return #err("Proposals canister not configured");
             case (?proposalsId) {
+                let daoPrincipal = Principal.fromText(daoId);
                 let proposals = actor(Principal.toText(proposalsId)) : actor {
                     vote: shared (
-                        DAOId,
                         Principal,
                         ProposalId,
                         VoteChoice,
                         ?Text
                     ) -> async Result<(), Text>;
                 };
-                await proposals.vote(daoId, msg.caller, proposalId, choice, reason)
+                await proposals.vote(daoPrincipal, proposalId, choice, reason)
             };
         }
     };
