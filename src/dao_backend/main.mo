@@ -449,6 +449,7 @@ persistent actor DAOMain {
         []
     };
 
+
     // Governance operations routed to dedicated canisters
     public func getGovernanceStats(daoId: DAOId) : async {
         totalProposals: Nat;
@@ -498,15 +499,21 @@ persistent actor DAOMain {
         }
     };
 
+
     public shared(msg) func createProposal(
         daoId: DAOId,
         title: Text,
         description: Text,
-        _proposalType: Text
+
+        proposalType: Types.ProposalType,
+        category: ?Text,
+        votingPeriod: ?Nat
+
     ) : async Result<Nat, Text> {
         if (not isRegisteredUser(daoId, msg.caller)) {
             return #err("Only registered users can create proposals");
         };
+
         switch (daoStates.get(daoId)) {
             case (?state) {
                 switch (state.proposalsCanister) {
@@ -566,6 +573,7 @@ persistent actor DAOMain {
             case null { #err("DAO not found") };
         }
     };
+
 
     // Utility functions
     private func isAdmin(daoId: DAOId, principal: Principal) : Bool {
