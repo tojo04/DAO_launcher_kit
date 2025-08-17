@@ -52,6 +52,9 @@ persistent actor StakingCanister {
     private var stakesEntries : [((Principal, StakeId), Stake)] = [];
     private var userStakesEntries : [(Principal, [(Principal, [StakeId])])] = [];
     private var adminPrincipalsEntries : [(Principal, [Principal])] = [];
+    private var stakingEnabledEntries : [(Principal, Bool)] = [];
+    private var minimumStakeAmountEntries : [(Principal, TokenAmount)] = [];
+    private var maximumStakeAmountEntries : [(Principal, TokenAmount)] = [];
     private var totalStakedAmount : TokenAmount = 0;
     private var totalRewardsDistributed : TokenAmount = 0;
 
@@ -68,11 +71,15 @@ persistent actor StakingCanister {
     // Local admin list for permission checks
     private transient var adminPrincipals = HashMap.HashMap<Principal, [Principal]>(10, Principal.equal, Principal.hash);
 
-    // Staking configuration parameters
+    // Staking configuration parameters per DAO
     // These control the economic parameters of the staking system
-    private var stakingEnabled : Bool = true;
-    private var minimumStakeAmount : TokenAmount = 10; // Minimum 10 tokens to prevent dust attacks
-    private var maximumStakeAmount : TokenAmount = 1000000; // Maximum 1M tokens to prevent centralization
+    private transient var stakingEnabled = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
+    private transient var minimumStakeAmount = HashMap.HashMap<Principal, TokenAmount>(10, Principal.equal, Principal.hash);
+    private transient var maximumStakeAmount = HashMap.HashMap<Principal, TokenAmount>(10, Principal.equal, Principal.hash);
+
+    private let DEFAULT_STAKING_ENABLED : Bool = true;
+    private let DEFAULT_MINIMUM_STAKE_AMOUNT : TokenAmount = 10; // Minimum 10 tokens to prevent dust attacks
+    private let DEFAULT_MAXIMUM_STAKE_AMOUNT : TokenAmount = 1000000; // Maximum 1M tokens to prevent centralization
 
     // System functions for upgrades
     system func preupgrade() {
@@ -83,6 +90,9 @@ persistent actor StakingCanister {
             })
         );
         adminPrincipalsEntries := Iter.toArray(adminPrincipals.entries());
+        stakingEnabledEntries := Iter.toArray(stakingEnabled.entries());
+        minimumStakeAmountEntries := Iter.toArray(minimumStakeAmount.entries());
+        maximumStakeAmountEntries := Iter.toArray(maximumStakeAmount.entries());
     };
 
     system func postupgrade() {
@@ -108,6 +118,24 @@ persistent actor StakingCanister {
             Principal.equal,
             Principal.hash
         );
+        stakingEnabled := HashMap.fromIter<Principal, Bool>(
+            stakingEnabledEntries.vals(),
+            stakingEnabledEntries.size(),
+            Principal.equal,
+            Principal.hash
+        );
+        minimumStakeAmount := HashMap.fromIter<Principal, TokenAmount>(
+            minimumStakeAmountEntries.vals(),
+            minimumStakeAmountEntries.size(),
+            Principal.equal,
+            Principal.hash
+        );
+        maximumStakeAmount := HashMap.fromIter<Principal, TokenAmount>(
+            maximumStakeAmountEntries.vals(),
+            maximumStakeAmountEntries.size(),
+            Principal.equal,
+            Principal.hash
+        );
     };
 
     // Public functions
@@ -116,15 +144,27 @@ persistent actor StakingCanister {
     public shared(msg) func stake(daoId: Principal, amount: TokenAmount, period: StakingPeriod) : async Result<StakeId, Text> {
         let caller = msg.caller;
 
-        if (not stakingEnabled) {
+        let enabled = switch (stakingEnabled.get(daoId)) {
+            case (?flag) flag;
+            case null DEFAULT_STAKING_ENABLED;
+        };
+        if (not enabled) {
             return #err("Staking is currently disabled");
         };
 
-        if (amount < minimumStakeAmount) {
+        let minAmount = switch (minimumStakeAmount.get(daoId)) {
+            case (?amt) amt;
+            case null DEFAULT_MINIMUM_STAKE_AMOUNT;
+        };
+        if (amount < minAmount) {
             return #err("Amount below minimum stake requirement");
         };
 
-        if (amount > maximumStakeAmount) {
+        let maxAmount = switch (maximumStakeAmount.get(daoId)) {
+            case (?amt) amt;
+            case null DEFAULT_MAXIMUM_STAKE_AMOUNT;
+        };
+        if (amount > maxAmount) {
             return #err("Amount exceeds maximum stake limit");
         };
 
@@ -494,6 +534,28 @@ persistent actor StakingCanister {
         }
     };
 
+    // Staking configuration getters
+    public query func getStakingEnabled(daoId: Principal) : async Bool {
+        switch (stakingEnabled.get(daoId)) {
+            case (?flag) flag;
+            case null DEFAULT_STAKING_ENABLED;
+        }
+    };
+
+    public query func getMinimumStakeAmount(daoId: Principal) : async TokenAmount {
+        switch (minimumStakeAmount.get(daoId)) {
+            case (?amt) amt;
+            case null DEFAULT_MINIMUM_STAKE_AMOUNT;
+        }
+    };
+
+    public query func getMaximumStakeAmount(daoId: Principal) : async TokenAmount {
+        switch (maximumStakeAmount.get(daoId)) {
+            case (?amt) amt;
+            case null DEFAULT_MAXIMUM_STAKE_AMOUNT;
+        }
+    };
+
     // Administrative functions
 
     // Enable or disable staking (admin only)
@@ -501,7 +563,7 @@ persistent actor StakingCanister {
         if (not isAdmin(daoId, msg.caller)) {
             return #err("Not authorized");
         };
-        stakingEnabled := enabled;
+        stakingEnabled.put(daoId, enabled);
         #ok()
     };
 
@@ -510,7 +572,7 @@ persistent actor StakingCanister {
         if (not isAdmin(daoId, msg.caller)) {
             return #err("Not authorized");
         };
-        minimumStakeAmount := amount;
+        minimumStakeAmount.put(daoId, amount);
         #ok()
     };
 
@@ -519,7 +581,7 @@ persistent actor StakingCanister {
         if (not isAdmin(daoId, msg.caller)) {
             return #err("Not authorized");
         };
-        maximumStakeAmount := amount;
+        maximumStakeAmount.put(daoId, amount);
         #ok()
     };
 
