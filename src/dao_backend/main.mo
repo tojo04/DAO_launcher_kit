@@ -613,7 +613,7 @@ persistent actor DAOMain {
         getGovernanceStats: shared query (Principal) -> async GovernanceStats;
     };
 
-    public func getGovernanceStats(daoId: DAOId) : async GovernanceStats {
+    public shared query func getGovernanceStats(daoId: DAOId) : async GovernanceStats {
         let defaultStats : GovernanceStats = {
             totalProposals = 0;
             activeProposals = 0;
@@ -627,16 +627,12 @@ persistent actor DAOMain {
                 switch (state.governanceCanister) {
                     case (?govId) {
                         let governance : GovernanceCanister = actor(Principal.toText(govId));
-                        try {
-                            await governance.getGovernanceStats(Principal.fromText(daoId))
-                        } catch (_) {
-                            defaultStats
-                        }
+                        governance.getGovernanceStats(Principal.fromText(daoId))
                     };
-                    case null defaultStats;
+                    case null async { defaultStats };
                 }
             };
-            case null defaultStats;
+            case null async { defaultStats };
         }
     };
 
