@@ -64,6 +64,8 @@ persistent actor StakingCanister {
     };
     private transient var stakes = HashMap.HashMap<(Principal, StakeId), Stake>(100, stakeKeyEqual, stakeKeyHash);
     private transient var userStakes = HashMap.HashMap<Principal, HashMap.HashMap<Principal, [StakeId]>>(50, Principal.equal, Principal.hash);
+    // Local admin list for permission checks
+    private transient var adminPrincipals = HashMap.HashMap<Principal, [Principal]>(10, Principal.equal, Principal.hash);
 
     // Staking configuration parameters
     // These control the economic parameters of the staking system
@@ -452,28 +454,41 @@ persistent actor StakingCanister {
 
     // Administrative functions
 
-    // Enable/disable staking
-    public shared(_msg) func setStakingEnabled(enabled: Bool) : async Result<(), Text> {
-        // In real implementation, only governance should be able to do this
+    // Enable or disable staking (admin only)
+    public shared(msg) func setStakingEnabled(daoId: Principal, enabled: Bool) : async Result<(), Text> {
+        if (not isAdmin(daoId, msg.caller)) {
+            return #err("Not authorized");
+        };
         stakingEnabled := enabled;
         #ok()
     };
 
-    // Update minimum stake amount
-    public shared(_msg) func setMinimumStakeAmount(amount: TokenAmount) : async Result<(), Text> {
-        // In real implementation, only governance should be able to do this
+    // Update minimum stake amount (admin only)
+    public shared(msg) func setMinimumStakeAmount(daoId: Principal, amount: TokenAmount) : async Result<(), Text> {
+        if (not isAdmin(daoId, msg.caller)) {
+            return #err("Not authorized");
+        };
         minimumStakeAmount := amount;
         #ok()
     };
 
-    // Update maximum stake amount
-    public shared(_msg) func setMaximumStakeAmount(amount: TokenAmount) : async Result<(), Text> {
-        // In real implementation, only governance should be able to do this
+    // Update maximum stake amount (admin only)
+    public shared(msg) func setMaximumStakeAmount(daoId: Principal, amount: TokenAmount) : async Result<(), Text> {
+        if (not isAdmin(daoId, msg.caller)) {
+            return #err("Not authorized");
+        };
         maximumStakeAmount := amount;
         #ok()
     };
 
     // Helper functions
+    private func isAdmin(daoId: Principal, principal: Principal) : Bool {
+        switch (adminPrincipals.get(daoId)) {
+            case (?arr) { Array.find<Principal>(arr, func(p) = p == principal) != null };
+            case null false;
+        }
+    };
+
     private func calculateUnlockTime(stakedAt: Time.Time, period: StakingPeriod) : ?Time.Time {
         switch (period) {
             case (#instant) null;
