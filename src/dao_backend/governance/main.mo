@@ -72,6 +72,7 @@ persistent actor GovernanceCanister {
             activeStakes: Nat;
             totalVotingPower: Nat;
         };
+    } = actor("aaaaa-aa");
 
     // Inter-canister communication setup
     // These actor references enable cross-canister calls for governance functionality
