@@ -18,7 +18,7 @@ type StakingPeriod =
 type StakeId = nat;
 type Stake =
  record {
-   daoId: Principal;
+   daoId: text;
    amount: TokenAmount;
    id: StakeId;
    isActive: bool;
@@ -45,12 +45,12 @@ type Result =
  };
 type Principal = principal;
 service : {
-  claimRewards: (daoId: Principal, stakeId: StakeId) -> (Result);
-  extendStakingPeriod: (daoId: Principal, stakeId: StakeId, newPeriod: StakingPeriod) ->
+  claimRewards: (daoId: text, stakeId: StakeId) -> (Result);
+  extendStakingPeriod: (daoId: text, stakeId: StakeId, newPeriod: StakingPeriod) ->
    (Result_2);
-  getStake: (daoId: Principal, stakeId: StakeId) -> (opt Stake) query;
-  getStakingRewards: (daoId: Principal, stakeId: StakeId) -> (opt StakingRewards) query;
-  getStakingStats: (daoId: Principal) ->
+  getStake: (daoId: text, stakeId: StakeId) -> (opt Stake) query;
+  getStakingRewards: (daoId: text, stakeId: StakeId) -> (opt StakingRewards) query;
+  getStakingStats: (daoId: text) ->
    (record {
       activeStakes: nat;
       averageStakeAmount: float64;
@@ -62,9 +62,9 @@ service : {
       totalStakedAmount: TokenAmount;
       totalStakes: nat;
     }) query;
-  getUserActiveStakes: (daoId: Principal, user: principal) -> (vec Stake) query;
-  getUserStakes: (daoId: Principal, user: principal) -> (vec Stake) query;
-  getUserStakingSummary: (daoId: Principal, user: principal) ->
+  getUserActiveStakes: (daoId: text, user: principal) -> (vec Stake) query;
+  getUserStakes: (daoId: text, user: principal) -> (vec Stake) query;
+  getUserStakingSummary: (daoId: text, user: principal) ->
    (record {
       activeStakes: nat;
       totalRewards: TokenAmount;
@@ -74,6 +74,6 @@ service : {
   setMaximumStakeAmount: (amount: TokenAmount) -> (Result_2);
   setMinimumStakeAmount: (amount: TokenAmount) -> (Result_2);
   setStakingEnabled: (enabled: bool) -> (Result_2);
-  stake: (daoId: Principal, amount: TokenAmount, period: StakingPeriod) -> (Result_1);
-  unstake: (daoId: Principal, stakeId: StakeId) -> (Result);
+  stake: (daoId: text, amount: TokenAmount, period: StakingPeriod) -> (Result_1);
+  unstake: (daoId: text, stakeId: StakeId) -> (Result);
 }

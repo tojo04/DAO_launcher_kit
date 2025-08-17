@@ -45,25 +45,26 @@ persistent actor StakingCanister {
     type TokenAmount = Types.TokenAmount;
     type StakingError = Types.StakingError;
     type CommonError = Types.CommonError;
+    type DAOId = Types.DAOId;
 
     // Stable storage for upgrade persistence
     // Core staking data that must survive canister upgrades
     private var nextStakeId : Nat = 1;
-    private var stakesEntries : [((Principal, StakeId), Stake)] = [];
-    private var userStakesEntries : [(Principal, [(Principal, [StakeId])])] = [];
+    private var stakesEntries : [((DAOId, StakeId), Stake)] = [];
+    private var userStakesEntries : [(Principal, [(DAOId, [StakeId])])] = [];
     private var totalStakedAmount : TokenAmount = 0;
     private var totalRewardsDistributed : TokenAmount = 0;
 
     // Runtime storage - rebuilt from stable storage after upgrades
     // HashMaps provide efficient lookup and management of stake data
-    private func stakeKeyEqual(a: (Principal, StakeId), b: (Principal, StakeId)) : Bool {
-        Principal.equal(a.0, b.0) and Nat.equal(a.1, b.1)
+    private func stakeKeyEqual(a: (DAOId, StakeId), b: (DAOId, StakeId)) : Bool {
+        Text.equal(a.0, b.0) and Nat.equal(a.1, b.1)
     };
-    private func stakeKeyHash(k: (Principal, StakeId)) : Nat32 {
-        Nat32.xor(Principal.hash(k.0), Nat32.fromNat(k.1))
+    private func stakeKeyHash(k: (DAOId, StakeId)) : Nat32 {
+        Nat32.xor(Text.hash(k.0), Nat32.fromNat(k.1))
     };
-    private transient var stakes = HashMap.HashMap<(Principal, StakeId), Stake>(100, stakeKeyEqual, stakeKeyHash);
-    private transient var userStakes = HashMap.HashMap<Principal, HashMap.HashMap<Principal, [StakeId]>>(50, Principal.equal, Principal.hash);
+    private transient var stakes = HashMap.HashMap<(DAOId, StakeId), Stake>(100, stakeKeyEqual, stakeKeyHash);
+    private transient var userStakes = HashMap.HashMap<Principal, HashMap.HashMap<DAOId, [StakeId]>>(50, Principal.equal, Principal.hash);
 
     // Staking configuration parameters
     // These control the economic parameters of the staking system
@@ -82,19 +83,19 @@ persistent actor StakingCanister {
     };
 
     system func postupgrade() {
-        stakes := HashMap.fromIter<(Principal, StakeId), Stake>(
+        stakes := HashMap.fromIter<(DAOId, StakeId), Stake>(
             stakesEntries.vals(),
             stakesEntries.size(),
             stakeKeyEqual,
             stakeKeyHash
         );
-        userStakes := HashMap.HashMap<Principal, HashMap.HashMap<Principal, [StakeId]>>(50, Principal.equal, Principal.hash);
+        userStakes := HashMap.HashMap<Principal, HashMap.HashMap<DAOId, [StakeId]>>(50, Principal.equal, Principal.hash);
         for ((user, daoEntries) in userStakesEntries.vals()) {
-            let daoMap = HashMap.fromIter<Principal, [StakeId]>(
+            let daoMap = HashMap.fromIter<DAOId, [StakeId]>(
                 daoEntries.vals(),
                 daoEntries.size(),
-                Principal.equal,
-                Principal.hash
+                Text.equal,
+                Text.hash
             );
             userStakes.put(user, daoMap);
         };
@@ -103,7 +104,7 @@ persistent actor StakingCanister {
     // Public functions
 
     // Stake tokens
-    public shared(msg) func stake(daoId: Principal, amount: TokenAmount, period: StakingPeriod) : async Result<StakeId, Text> {
+    public shared(msg) func stake(daoId: DAOId, amount: TokenAmount, period: StakingPeriod) : async Result<StakeId, Text> {
         let caller = msg.caller;
 
         if (not stakingEnabled) {
@@ -141,7 +142,7 @@ persistent actor StakingCanister {
         // Update user stakes
         let daoMap = switch (userStakes.get(caller)) {
             case (?map) map;
-            case null HashMap.HashMap<Principal, [StakeId]>(1, Principal.equal, Principal.hash);
+            case null HashMap.HashMap<DAOId, [StakeId]>(1, Text.equal, Text.hash);
         };
         let currentUserStakes = switch (daoMap.get(daoId)) {
             case (?stakes) stakes;
@@ -158,7 +159,7 @@ persistent actor StakingCanister {
     };
 
     // Unstake tokens
-    public shared(msg) func unstake(daoId: Principal, stakeId: StakeId) : async Result<TokenAmount, Text> {
+    public shared(msg) func unstake(daoId: DAOId, stakeId: StakeId) : async Result<TokenAmount, Text> {
         let caller = msg.caller;
 
         let stake = switch (stakes.get((daoId, stakeId))) {
@@ -210,7 +211,7 @@ persistent actor StakingCanister {
     };
 
     // Claim rewards without unstaking (for instant staking)
-    public shared(msg) func claimRewards(daoId: Principal, stakeId: StakeId) : async Result<TokenAmount, Text> {
+    public shared(msg) func claimRewards(daoId: DAOId, stakeId: StakeId) : async Result<TokenAmount, Text> {
         let caller = msg.caller;
 
         let stake = switch (stakes.get((daoId, stakeId))) {
@@ -261,7 +262,7 @@ persistent actor StakingCanister {
     };
 
     // Extend staking period
-    public shared(msg) func extendStakingPeriod(daoId: Principal, stakeId: StakeId, newPeriod: StakingPeriod) : async Result<(), Text> {
+    public shared(msg) func extendStakingPeriod(daoId: DAOId, stakeId: StakeId, newPeriod: StakingPeriod) : async Result<(), Text> {
         let caller = msg.caller;
 
         let stake = switch (stakes.get((daoId, stakeId))) {
@@ -302,13 +303,13 @@ persistent actor StakingCanister {
     // Query functions
 
     // Get stake by ID
-    public query func getStake(daoId: Principal, stakeId: StakeId) : async ?Stake {
+    public query func getStake(daoId: DAOId, stakeId: StakeId) : async ?Stake {
         stakes.get((daoId, stakeId))
     };
 
     // Get user's stakes
     // Private version for internal use
-    private func getUserStakesInternal(daoId: Principal, user: Principal) : [Stake] {
+    private func getUserStakesInternal(daoId: DAOId, user: Principal) : [Stake] {
         let daoMap = switch (userStakes.get(user)) {
             case (?map) map;
             case null return [];
@@ -328,18 +329,18 @@ persistent actor StakingCanister {
         Buffer.toArray(userStakesList)
     };
 
-    public query func getUserStakes(daoId: Principal, user: Principal) : async [Stake] {
+    public query func getUserStakes(daoId: DAOId, user: Principal) : async [Stake] {
         getUserStakesInternal(daoId, user)
     };
 
     // Get user's active stakes
-    public query func getUserActiveStakes(daoId: Principal, user: Principal) : async [Stake] {
+    public query func getUserActiveStakes(daoId: DAOId, user: Principal) : async [Stake] {
         let allUserStakes = getUserStakesInternal(daoId, user);
         Array.filter<Stake>(allUserStakes, func(stake) = stake.isActive)
     };
 
     // Get staking rewards for a stake
-    public query func getStakingRewards(daoId: Principal, stakeId: StakeId) : async ?StakingRewards {
+    public query func getStakingRewards(daoId: DAOId, stakeId: StakeId) : async ?StakingRewards {
         switch (stakes.get((daoId, stakeId))) {
             case (?stake) {
                 let totalRewards = calculateRewards(stake);
@@ -364,7 +365,7 @@ persistent actor StakingCanister {
     };
 
     // Get user's total staking summary
-    public query func getUserStakingSummary(daoId: Principal, user: Principal) : async {
+    public query func getUserStakingSummary(daoId: DAOId, user: Principal) : async {
         totalStaked: TokenAmount;
         totalRewards: TokenAmount;
         activeStakes: Nat;
@@ -394,7 +395,7 @@ persistent actor StakingCanister {
     };
 
     // Get staking statistics
-    public query func getStakingStats(daoId: Principal) : async {
+    public query func getStakingStats(daoId: DAOId) : async {
         totalStakes: Nat;
         activeStakes: Nat;
         totalStakedAmount: TokenAmount;
@@ -413,7 +414,7 @@ persistent actor StakingCanister {
         var locked365Count : Nat = 0;
 
         for (stake in stakes.vals()) {
-            if (Principal.equal(stake.daoId, daoId)) {
+            if (Text.equal(stake.daoId, daoId)) {
                 totalStakesDao += 1;
                 totalRewardsDistributedDao += stake.rewards;
                 if (stake.isActive) {

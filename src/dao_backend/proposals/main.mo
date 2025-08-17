@@ -18,15 +18,15 @@ persistent actor ProposalsCanister {
     type Vote = Types.Vote;
     type ProposalId = Types.ProposalId;
     type GovernanceConfig = Types.GovernanceConfig;
-    type DAOId = Types.Principal;
+    type DAOId = Types.DAOId;
     type ProposalKey = (DAOId, ProposalId);
 
     private func eqProposalKey(x : ProposalKey, y : ProposalKey) : Bool {
-        Principal.equal(x.0, y.0) and x.1 == y.1
+        Text.equal(x.0, y.0) and x.1 == y.1
     };
 
     private func hashProposalKey(k : ProposalKey) : Nat32 {
-        Text.hash(Principal.toText(k.0) # "_" # Nat.toText(k.1))
+        Text.hash(k.0 # "_" # Nat.toText(k.1))
     };
 
     // Proposal template types
@@ -64,7 +64,7 @@ persistent actor ProposalsCanister {
 
     // Inter-canister reference to staking for voting power
     var staking : actor {
-        getUserStakingSummary: shared query (Principal, Principal) -> async {
+        getUserStakingSummary: shared query (Types.DAOId, Principal) -> async {
             totalStaked: Nat;
             totalRewards: Nat;
             activeStakes: Nat;
@@ -192,7 +192,7 @@ persistent actor ProposalsCanister {
 
     // Create a new proposal
     public shared(msg) func createProposal(
-        daoId: Principal,
+        daoId: DAOId,
         title: Text,
         description: Text,
         proposalType: Types.ProposalType,
@@ -221,7 +221,7 @@ persistent actor ProposalsCanister {
         };
 
         let proposal : Proposal = {
-            daoId = daoId;
+        daoId = daoId;
             id = proposalId;
             proposer = caller;
             title = title;
@@ -244,7 +244,7 @@ persistent actor ProposalsCanister {
 
     // Create proposal from template
     public shared(_msg) func createProposalFromTemplate(
-        daoId: Principal,
+        daoId: DAOId,
         templateId: Nat,
         title: Text,
         parameters: [(Text, Text)],
@@ -282,7 +282,7 @@ persistent actor ProposalsCanister {
 
     // Batch vote on multiple proposals
     public shared(_msg) func batchVote(
-        daoId: Principal,
+        daoId: DAOId,
         votes: [(ProposalId, Types.VoteChoice, ?Text)]
     ) : async [Result<(), Text>] {
         let results = Buffer.Buffer<Result<(), Text>>(votes.size());
@@ -297,13 +297,13 @@ persistent actor ProposalsCanister {
 
     // Cast a vote on a proposal
     public shared(msg) func vote(
-        daoId: Principal,
+        daoId: DAOId,
         proposalId: ProposalId,
         choice: Types.VoteChoice,
         reason: ?Text
     ) : async Result<(), Text> {
         let caller = msg.caller;
-        let voteKey = Principal.toText(daoId) # "_" # Nat.toText(proposalId) # "_" # Principal.toText(caller);
+        let voteKey = daoId # "_" # Nat.toText(proposalId) # "_" # Principal.toText(caller);
 
         // Check if already voted
         switch (votes.get(voteKey)) {
@@ -418,12 +418,12 @@ persistent actor ProposalsCanister {
     // Query functions
 
     // Get proposal by ID
-    public query func getProposal(daoId: Principal, proposalId: ProposalId) : async ?Proposal {
+    public query func getProposal(daoId: DAOId, proposalId: ProposalId) : async ?Proposal {
         proposals.get((daoId, proposalId))
     };
 
     // Get all proposals
-    public query func getAllProposals(daoId: Principal) : async [Proposal] {
+    public query func getAllProposals(daoId: DAOId) : async [Proposal] {
         let filtered = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
             if (proposal.daoId == daoId) {
@@ -434,7 +434,7 @@ persistent actor ProposalsCanister {
     };
 
     // Get proposals by category
-    public query func getProposalsByCategory(daoId: Principal, category: Text) : async [Proposal] {
+    public query func getProposalsByCategory(daoId: DAOId, category: Text) : async [Proposal] {
         let filteredProposals = Buffer.Buffer<Proposal>(0);
         // Category filtering not implemented yet; return all proposals for DAO
         for (proposal in proposals.vals()) {
@@ -446,7 +446,7 @@ persistent actor ProposalsCanister {
     };
 
     // Get trending proposals (by vote activity)
-    public query func getTrendingProposals(daoId: Principal, limit: Nat) : async [Proposal] {
+    public query func getTrendingProposals(daoId: DAOId, limit: Nat) : async [Proposal] {
         let allProposals = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
             if (proposal.daoId == daoId) {
@@ -467,22 +467,22 @@ persistent actor ProposalsCanister {
     };
 
     // Get proposal templates
-    public query func getProposalTemplates(_daoId: Principal) : async [ProposalTemplate] {
+    public query func getProposalTemplates(_daoId: DAOId) : async [ProposalTemplate] {
         Iter.toArray(templates.vals())
     };
 
     // Get proposal categories
-    public query func getProposalCategories(_daoId: Principal) : async [ProposalCategory] {
+    public query func getProposalCategories(_daoId: DAOId) : async [ProposalCategory] {
         Iter.toArray(categories.vals())
     };
 
     // Get template by ID
-    public query func getTemplate(_daoId: Principal, templateId: Nat) : async ?ProposalTemplate {
+    public query func getTemplate(_daoId: DAOId, templateId: Nat) : async ?ProposalTemplate {
         templates.get(templateId)
     };
 
     // Get templates by category
-    public query func getTemplatesByCategory(_daoId: Principal, category: Text) : async [ProposalTemplate] {
+    public query func getTemplatesByCategory(_daoId: DAOId, category: Text) : async [ProposalTemplate] {
         let filteredTemplates = Buffer.Buffer<ProposalTemplate>(0);
         for (template in templates.vals()) {
             if (template.category == category) {
@@ -496,7 +496,7 @@ persistent actor ProposalsCanister {
 
     // Add new template
     public shared(_msg) func addTemplate(
-        _daoId: Principal,
+        _daoId: DAOId,
         name: Text,
         description: Text,
         category: Text,
@@ -521,7 +521,7 @@ persistent actor ProposalsCanister {
 
     // Add new category
     public shared(_msg) func addCategory(
-        _daoId: Principal,
+        _daoId: DAOId,
         id: Text,
         name: Text,
         description: Text,
@@ -539,7 +539,7 @@ persistent actor ProposalsCanister {
     };
 
     // Helper functions
-    private func getActiveProposalsByUser(daoId: Principal, user: Principal) : [Proposal] {
+    private func getActiveProposalsByUser(daoId: DAOId, user: Principal) : [Proposal] {
         let userProposals = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
             if (proposal.daoId == daoId and proposal.proposer == user and proposal.status == #active) {
@@ -550,7 +550,7 @@ persistent actor ProposalsCanister {
     };
 
     // Get proposal statistics
-    public query func getProposalStats(daoId: Principal) : async {
+    public query func getProposalStats(daoId: DAOId) : async {
         totalProposals: Nat;
         activeProposals: Nat;
         succeededProposals: Nat;

@@ -18,7 +18,7 @@ export interface TreasuryBalance {
 }
 export interface TreasuryTransaction {
   'id' : bigint,
-  'daoId' : Principal,
+  'daoId' : string,
   'transactionType' : TreasuryTransactionType,
   'amount' : TokenAmount,
   'from' : [] | [Principal],
@@ -36,19 +36,19 @@ export type TreasuryTransactionType = { 'fee' : null } |
   { 'withdrawal' : null } |
   { 'proposalExecution' : null };
 export interface _SERVICE {
-  'addAuthorizedPrincipal' : ActorMethod<[Principal, Principal], Result_1>,
-  'deposit' : ActorMethod<[Principal, TokenAmount, string], Result>,
-  'getAllTransactions' : ActorMethod<[Principal], Array<TreasuryTransaction>>,
-  'getAuthorizedPrincipals' : ActorMethod<[Principal], Array<Principal>>,
-  'getBalance' : ActorMethod<[Principal], TreasuryBalance>,
-  'getRecentTransactions' : ActorMethod<[Principal, bigint], Array<TreasuryTransaction>>,
-  'getTransaction' : ActorMethod<[bigint, Principal], [] | [TreasuryTransaction]>,
+  'addAuthorizedPrincipal' : ActorMethod<[string, Principal], Result_1>,
+  'deposit' : ActorMethod<[string, TokenAmount, string], Result>,
+  'getAllTransactions' : ActorMethod<[string], Array<TreasuryTransaction>>,
+  'getAuthorizedPrincipals' : ActorMethod<[string], Array<Principal>>,
+  'getBalance' : ActorMethod<[string], TreasuryBalance>,
+  'getRecentTransactions' : ActorMethod<[string, bigint], Array<TreasuryTransaction>>,
+  'getTransaction' : ActorMethod<[bigint, string], [] | [TreasuryTransaction]>,
   'getTransactionsByType' : ActorMethod<
-    [Principal, TreasuryTransactionType],
+    [string, TreasuryTransactionType],
     Array<TreasuryTransaction>
   >,
   'getTreasuryStats' : ActorMethod<
-    [Principal],
+    [string],
     {
       'balance' : TreasuryBalance,
       'totalWithdrawals' : TokenAmount,
@@ -57,13 +57,13 @@ export interface _SERVICE {
       'totalTransactions' : bigint,
     }
   >,
-  'lockTokens' : ActorMethod<[Principal, TokenAmount, string], Result_1>,
-  'releaseReservedTokens' : ActorMethod<[Principal, TokenAmount, string], Result_1>,
-  'removeAuthorizedPrincipal' : ActorMethod<[Principal, Principal], Result_1>,
-  'reserveTokens' : ActorMethod<[Principal, TokenAmount, string], Result_1>,
-  'unlockTokens' : ActorMethod<[Principal, TokenAmount, string], Result_1>,
+  'lockTokens' : ActorMethod<[string, TokenAmount, string], Result_1>,
+  'releaseReservedTokens' : ActorMethod<[string, TokenAmount, string], Result_1>,
+  'removeAuthorizedPrincipal' : ActorMethod<[string, Principal], Result_1>,
+  'reserveTokens' : ActorMethod<[string, TokenAmount, string], Result_1>,
+  'unlockTokens' : ActorMethod<[string, TokenAmount, string], Result_1>,
   'withdraw' : ActorMethod<
-    [Principal, Principal, TokenAmount, string, [] | [ProposalId]],
+    [string, Principal, TokenAmount, string, [] | [ProposalId]],
     Result
   >,
 }

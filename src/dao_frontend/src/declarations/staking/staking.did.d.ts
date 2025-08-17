@@ -10,7 +10,7 @@ export type Result_1 = { 'ok' : StakeId } |
 export type Result_2 = { 'ok' : null } |
   { 'err' : string };
 export interface Stake {
-  'daoId' : Principal,
+  'daoId' : string,
   'id' : StakeId,
   'staker' : Principal,
   'unlocksAt' : [] | [Time],
@@ -35,15 +35,15 @@ export interface StakingRewards {
 export type Time = bigint;
 export type TokenAmount = bigint;
 export interface _SERVICE {
-  'claimRewards' : ActorMethod<[Principal, StakeId], Result>,
+  'claimRewards' : ActorMethod<[string, StakeId], Result>,
   'extendStakingPeriod' : ActorMethod<
-    [Principal, StakeId, StakingPeriod],
+    [string, StakeId, StakingPeriod],
     Result_2
   >,
-  'getStake' : ActorMethod<[Principal, StakeId], [] | [Stake]>,
-  'getStakingRewards' : ActorMethod<[Principal, StakeId], [] | [StakingRewards]>,
+  'getStake' : ActorMethod<[string, StakeId], [] | [Stake]>,
+  'getStakingRewards' : ActorMethod<[string, StakeId], [] | [StakingRewards]>,
   'getStakingStats' : ActorMethod<
-    [Principal],
+    [string],
     {
       'stakingPeriodDistribution' : Array<[StakingPeriod, bigint]>,
       'averageStakeAmount' : number,
@@ -53,10 +53,10 @@ export interface _SERVICE {
       'totalStakedAmount' : TokenAmount,
     }
   >,
-  'getUserActiveStakes' : ActorMethod<[Principal, Principal], Array<Stake>>,
-  'getUserStakes' : ActorMethod<[Principal, Principal], Array<Stake>>,
+  'getUserActiveStakes' : ActorMethod<[string, Principal], Array<Stake>>,
+  'getUserStakes' : ActorMethod<[string, Principal], Array<Stake>>,
   'getUserStakingSummary' : ActorMethod<
-    [Principal, Principal],
+    [string, Principal],
     {
       'totalRewards' : TokenAmount,
       'totalVotingPower' : bigint,
@@ -67,8 +67,8 @@ export interface _SERVICE {
   'setMaximumStakeAmount' : ActorMethod<[TokenAmount], Result_2>,
   'setMinimumStakeAmount' : ActorMethod<[TokenAmount], Result_2>,
   'setStakingEnabled' : ActorMethod<[boolean], Result_2>,
-  'stake' : ActorMethod<[Principal, TokenAmount, StakingPeriod], Result_1>,
-  'unstake' : ActorMethod<[Principal, StakeId], Result>,
+  'stake' : ActorMethod<[string, TokenAmount, StakingPeriod], Result_1>,
+  'unstake' : ActorMethod<[string, StakeId], Result>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

@@ -41,33 +41,34 @@ persistent actor GovernanceCanister {
     type GovernanceConfig = Types.GovernanceConfig;
     type GovernanceError = Types.GovernanceError;
     type CommonError = Types.CommonError;
+    type DAOId = Types.DAOId;
 
 
     // Key types for multi-DAO support
-    type ProposalKey = (Principal, ProposalId);
-    type VoteKey = (Principal, ProposalId, Principal);
+    type ProposalKey = (DAOId, ProposalId);
+    type VoteKey = (DAOId, ProposalId, Principal);
 
     private func proposalKeyEqual(a: ProposalKey, b: ProposalKey) : Bool {
-        Principal.equal(a.0, b.0) and a.1 == b.1
+        Text.equal(a.0, b.0) and a.1 == b.1
     };
 
     private func proposalKeyHash(k: ProposalKey) : Nat32 {
-        Principal.hash(k.0) + Nat32.fromNat(k.1)
+        Text.hash(k.0) + Nat32.fromNat(k.1)
     };
 
     private func voteKeyEqual(a: VoteKey, b: VoteKey) : Bool {
-        Principal.equal(a.0, b.0) and a.1 == b.1 and Principal.equal(a.2, b.2)
+        Text.equal(a.0, b.0) and a.1 == b.1 and Principal.equal(a.2, b.2)
     };
 
     private func voteKeyHash(k: VoteKey) : Nat32 {
-        Principal.hash(k.0) + Nat32.fromNat(k.1) + Principal.hash(k.2)
+        Text.hash(k.0) + Nat32.fromNat(k.1) + Principal.hash(k.2)
     };
 
     // Inter-canister communication setup
     // Actor reference for staking canister
 
     var staking : actor {
-        getUserStakingSummary: shared query (Principal, Principal) -> async {
+        getUserStakingSummary: shared query (Types.DAOId, Principal) -> async {
 
             totalStaked: Nat;
             totalRewards: Nat;
@@ -91,7 +92,7 @@ persistent actor GovernanceCanister {
     private var nextProposalId : Nat = 1;
     private var proposalsEntries : [(ProposalKey, Proposal)] = [];
     private var votesEntries : [(VoteKey, Vote)] = [];
-    private var configEntries : [(Principal, GovernanceConfig)] = [];
+    private var configEntries : [(DAOId, GovernanceConfig)] = [];
     private var stakingId : Principal = Principal.fromText("aaaaa-aa");
     private var daoInstance : Types.DAOId = "";
     private var initialized : Bool = false;
@@ -100,7 +101,7 @@ persistent actor GovernanceCanister {
     // HashMaps provide O(1) lookup performance for governance operations
     private transient var proposals = HashMap.HashMap<ProposalKey, Proposal>(10, proposalKeyEqual, proposalKeyHash);
     private transient var votes = HashMap.HashMap<VoteKey, Vote>(100, voteKeyEqual, voteKeyHash);
-    private transient var config = HashMap.HashMap<Principal, GovernanceConfig>(1, Principal.equal, Principal.hash);
+    private transient var config = HashMap.HashMap<DAOId, GovernanceConfig>(1, Text.equal, Text.hash);
 
     public shared(msg) func init(newDaoId: Principal, newStakingId: Principal, daoInstanceId: Types.DAOId) : async () {
         if (initialized) {
@@ -141,7 +142,7 @@ persistent actor GovernanceCanister {
         }
     };
 
-    private func getConfigForDao(daoId: Principal) : GovernanceConfig {
+    private func getConfigForDao(daoId: DAOId) : GovernanceConfig {
         switch (config.get(daoId)) {
             case (?c) c;
             case null {
@@ -172,11 +173,11 @@ persistent actor GovernanceCanister {
             voteKeyEqual,
             voteKeyHash
         );
-        config := HashMap.fromIter<Principal, GovernanceConfig>(
+        config := HashMap.fromIter<DAOId, GovernanceConfig>(
             configEntries.vals(),
             configEntries.size(),
-            Principal.equal,
-            Principal.hash
+            Text.equal,
+            Text.hash
         );
 
         staking := actor(Principal.toText(stakingId));
@@ -186,7 +187,7 @@ persistent actor GovernanceCanister {
 
     // Create a new proposal
     public shared(msg) func createProposal(
-        daoId: Principal,
+        daoId: DAOId,
         title: Text,
         description: Text,
         proposalType: Types.ProposalType,
@@ -237,7 +238,7 @@ persistent actor GovernanceCanister {
 
     // Cast a vote on a proposal
     public shared(msg) func vote(
-        daoId: Principal,
+        daoId: DAOId,
         proposalId: ProposalId,
         choice: Types.VoteChoice,
         reason: ?Text
@@ -364,7 +365,7 @@ persistent actor GovernanceCanister {
     };
 
     // Execute a proposal
-    public shared(_msg) func executeProposal(daoId: Principal, proposalId: ProposalId) : async Result<(), Text> {
+    public shared(_msg) func executeProposal(daoId: DAOId, proposalId: ProposalId) : async Result<(), Text> {
         let proposal = switch (proposals.get((daoId, proposalId))) {
             case (?p) p;
             case null return #err("Proposal not found");
@@ -465,12 +466,12 @@ persistent actor GovernanceCanister {
     // Query functions
 
     // Get proposal by ID
-    public query func getProposal(daoId: Principal, proposalId: ProposalId) : async ?Proposal {
+    public query func getProposal(daoId: DAOId, proposalId: ProposalId) : async ?Proposal {
         proposals.get((daoId, proposalId))
     };
 
     // Get all proposals for a DAO
-    public query func getAllProposals(daoId: Principal) : async [Proposal] {
+    public query func getAllProposals(daoId: DAOId) : async [Proposal] {
         let buffer = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
             if (proposal.daoId == daoId) {
@@ -481,7 +482,7 @@ persistent actor GovernanceCanister {
     };
 
     // Get active proposals for a DAO
-    public query func getActiveProposals(daoId: Principal) : async [Proposal] {
+    public query func getActiveProposals(daoId: DAOId) : async [Proposal] {
         let activeProposals = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
             if (proposal.daoId == daoId and proposal.status == #active and Time.now() <= proposal.votingDeadline) {
@@ -492,7 +493,7 @@ persistent actor GovernanceCanister {
     };
 
     // Get proposals by status for a DAO
-    public query func getProposalsByStatus(daoId: Principal, status: Types.ProposalStatus) : async [Proposal] {
+    public query func getProposalsByStatus(daoId: DAOId, status: Types.ProposalStatus) : async [Proposal] {
         let filteredProposals = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
             if (proposal.daoId == daoId and proposal.status == status) {
@@ -503,12 +504,12 @@ persistent actor GovernanceCanister {
     };
 
     // Get user's vote on a proposal
-    public query func getUserVote(daoId: Principal, proposalId: ProposalId, user: Principal) : async ?Vote {
+    public query func getUserVote(daoId: DAOId, proposalId: ProposalId, user: Principal) : async ?Vote {
         votes.get((daoId, proposalId, user))
     };
 
     // Get all votes for a proposal
-    public query func getProposalVotes(daoId: Principal, proposalId: ProposalId) : async [Vote] {
+    public query func getProposalVotes(daoId: DAOId, proposalId: ProposalId) : async [Vote] {
         let proposalVotes = Buffer.Buffer<Vote>(0);
         for (vote in votes.vals()) {
             if (vote.daoId == daoId and vote.proposalId == proposalId) {
@@ -519,19 +520,19 @@ persistent actor GovernanceCanister {
     };
 
     // Get governance configuration for a DAO
-    public query func getConfig(daoId: Principal) : async ?GovernanceConfig {
+    public query func getConfig(daoId: DAOId) : async ?GovernanceConfig {
         config.get(daoId)
     };
 
     // Update governance configuration (admin only)
-    public shared(_msg) func updateConfig(daoId: Principal, newConfig: GovernanceConfig) : async Result<(), Text> {
+    public shared(_msg) func updateConfig(daoId: DAOId, newConfig: GovernanceConfig) : async Result<(), Text> {
         // In a real implementation, you'd check if the caller is an admin
         config.put(daoId, newConfig);
         #ok()
     };
 
     // Helper functions
-    private func getActiveProposalsByUser(daoId: Principal, user: Principal) : [Proposal] {
+    private func getActiveProposalsByUser(daoId: DAOId, user: Principal) : [Proposal] {
         let userProposals = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
             if (proposal.daoId == daoId and proposal.proposer == user and proposal.status == #active) {
@@ -542,7 +543,7 @@ persistent actor GovernanceCanister {
     };
 
     // Get governance statistics for a DAO
-    public query func getGovernanceStats(daoId: Principal) : async {
+    public query func getGovernanceStats(daoId: DAOId) : async {
         totalProposals: Nat;
         activeProposals: Nat;
         succeededProposals: Nat;

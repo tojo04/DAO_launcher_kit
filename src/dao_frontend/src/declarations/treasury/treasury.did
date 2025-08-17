@@ -9,7 +9,7 @@ type TreasuryTransactionType =
 type TreasuryTransaction =
  record {
    id: nat;
-   daoId: Principal;
+   daoId: text;
    transactionType: TreasuryTransactionType;
    amount: TokenAmount;
    from: opt Principal;
@@ -45,16 +45,16 @@ type Result =
 type ProposalId = nat;
 type Principal = principal;
 service : {
-  addAuthorizedPrincipal: (daoId: Principal, "principal": principal) -> (Result_1);
-  deposit: (daoId: Principal, amount: TokenAmount, description: text) -> (Result);
-  getAllTransactions: (daoId: Principal) -> (vec TreasuryTransaction) query;
-  getAuthorizedPrincipals: (daoId: Principal) -> (vec principal) query;
-  getBalance: (daoId: Principal) -> (TreasuryBalance) query;
-  getRecentTransactions: (daoId: Principal, limit: nat) -> (vec TreasuryTransaction) query;
-  getTransaction: (transactionId: nat, daoId: Principal) -> (opt TreasuryTransaction) query;
-  getTransactionsByType: (daoId: Principal, transactionType: TreasuryTransactionType) ->
+  addAuthorizedPrincipal: (daoId: text, "principal": principal) -> (Result_1);
+  deposit: (daoId: text, amount: TokenAmount, description: text) -> (Result);
+  getAllTransactions: (daoId: text) -> (vec TreasuryTransaction) query;
+  getAuthorizedPrincipals: (daoId: text) -> (vec principal) query;
+  getBalance: (daoId: text) -> (TreasuryBalance) query;
+  getRecentTransactions: (daoId: text, limit: nat) -> (vec TreasuryTransaction) query;
+  getTransaction: (transactionId: nat, daoId: text) -> (opt TreasuryTransaction) query;
+  getTransactionsByType: (daoId: text, transactionType: TreasuryTransactionType) ->
    (vec TreasuryTransaction) query;
-  getTreasuryStats: (daoId: Principal) ->
+  getTreasuryStats: (daoId: text) ->
    (record {
       averageTransactionAmount: float64;
       balance: TreasuryBalance;
@@ -62,11 +62,11 @@ service : {
       totalTransactions: nat;
       totalWithdrawals: TokenAmount;
     }) query;
-  lockTokens: (daoId: Principal, amount: TokenAmount, reason: text) -> (Result_1);
-  releaseReservedTokens: (daoId: Principal, amount: TokenAmount, reason: text) -> (Result_1);
-  removeAuthorizedPrincipal: (daoId: Principal, "principal": principal) -> (Result_1);
-  reserveTokens: (daoId: Principal, amount: TokenAmount, reason: text) -> (Result_1);
-  unlockTokens: (daoId: Principal, amount: TokenAmount, reason: text) -> (Result_1);
-  withdraw: (daoId: Principal, recipient: principal, amount: TokenAmount, description:
+  lockTokens: (daoId: text, amount: TokenAmount, reason: text) -> (Result_1);
+  releaseReservedTokens: (daoId: text, amount: TokenAmount, reason: text) -> (Result_1);
+  removeAuthorizedPrincipal: (daoId: text, "principal": principal) -> (Result_1);
+  reserveTokens: (daoId: text, amount: TokenAmount, reason: text) -> (Result_1);
+  unlockTokens: (daoId: text, amount: TokenAmount, reason: text) -> (Result_1);
+  withdraw: (daoId: text, recipient: principal, amount: TokenAmount, description:
    text, proposalId: opt ProposalId) -> (Result);
 }

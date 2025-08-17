@@ -60,8 +60,9 @@ type ProposalCategory =
    id: text;
    name: text;
  };
-type Proposal = 
+type Proposal =
  record {
+   daoId: text;
    approvalThreshold: nat;
    createdAt: Time;
    description: text;
@@ -94,26 +95,26 @@ type MembershipChangeProposal =
    role: text;
  };
 service : {
-  addCategory: (id: text, name: text, description: text, color: text) ->
+  addCategory: (daoId: text, id: text, name: text, description: text, color: text) ->
    (Result);
-  addTemplate: (name: text, description: text, category: text,
+  addTemplate: (daoId: text, name: text, description: text, category: text,
    requiredFields: vec text, template: text) -> (Result_2);
-  batchVote: (votes: vec record {
+  batchVote: (daoId: text, votes: vec record {
                            ProposalId;
                            VoteChoice;
                            opt text;
                          }) -> (vec Result);
-  createProposal: (title: text, description: text, proposalType:
+  createProposal: (daoId: text, title: text, description: text, proposalType:
    ProposalType, category: opt text, votingPeriod: opt nat) -> (Result_1);
-  createProposalFromTemplate: (templateId: nat, title: text, parameters:
+  createProposalFromTemplate: (daoId: text, templateId: nat, title: text, parameters:
    vec record {
          text;
          text;
        }, votingPeriod: opt nat) -> (Result_1);
-  getAllProposals: () -> (vec Proposal) query;
-  getProposal: (proposalId: ProposalId) -> (opt Proposal) query;
-  getProposalCategories: () -> (vec ProposalCategory) query;
-  getProposalStats: () ->
+  getAllProposals: (daoId: text) -> (vec Proposal) query;
+  getProposal: (daoId: text, proposalId: ProposalId) -> (opt Proposal) query;
+  getProposalCategories: (daoId: text) -> (vec ProposalCategory) query;
+  getProposalStats: (daoId: text) ->
    (record {
       activeProposals: nat;
       failedProposals: nat;
@@ -123,12 +124,12 @@ service : {
       totalTemplates: nat;
       totalVotes: nat;
     }) query;
-  getProposalTemplates: () -> (vec ProposalTemplate) query;
-  getProposalsByCategory: (category: text) -> (vec Proposal) query;
-  getTemplate: (templateId: nat) -> (opt ProposalTemplate) query;
-  getTemplatesByCategory: (category: text) -> (vec ProposalTemplate) query;
-  getTrendingProposals: (limit: nat) -> (vec Proposal) query;
+  getProposalTemplates: (daoId: text) -> (vec ProposalTemplate) query;
+  getProposalsByCategory: (daoId: text, category: text) -> (vec Proposal) query;
+  getTemplate: (daoId: text, templateId: nat) -> (opt ProposalTemplate) query;
+  getTemplatesByCategory: (daoId: text, category: text) -> (vec ProposalTemplate) query;
+  getTrendingProposals: (daoId: text, limit: nat) -> (vec Proposal) query;
   init: (stakingId: principal) -> () oneway;
-  vote: (proposalId: ProposalId, choice: VoteChoice, reason: opt text) ->
+  vote: (daoId: text, proposalId: ProposalId, choice: VoteChoice, reason: opt text) ->
    (Result);
 }

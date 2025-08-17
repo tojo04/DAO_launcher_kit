@@ -22,7 +22,7 @@ export interface ParameterChangeProposal {
 }
 export type Principal = Principal;
 export interface Proposal {
-  'daoId' : Principal,
+  'daoId' : string,
   'id' : ProposalId,
   'status' : ProposalStatus,
   'title' : string,
@@ -61,7 +61,7 @@ export interface TreasuryTransferProposal {
   'reason' : string,
 }
 export interface Vote {
-  'daoId' : Principal,
+  'daoId' : string,
   'votingPower' : bigint,
   'voter' : Principal,
   'timestamp' : Time,
@@ -74,15 +74,15 @@ export type VoteChoice = { 'against' : null } |
   { 'inFavor' : null };
 export interface _SERVICE {
   'createProposal' : ActorMethod<
-    [Principal, string, string, ProposalType, [] | [bigint]],
+    [string, string, string, ProposalType, [] | [bigint]],
     Result_1
   >,
-  'executeProposal' : ActorMethod<[Principal, ProposalId], Result>,
-  'getActiveProposals' : ActorMethod<[Principal], Array<Proposal>>,
-  'getAllProposals' : ActorMethod<[Principal], Array<Proposal>>,
-  'getConfig' : ActorMethod<[Principal], [] | [GovernanceConfig]>,
+  'executeProposal' : ActorMethod<[string, ProposalId], Result>,
+  'getActiveProposals' : ActorMethod<[string], Array<Proposal>>,
+  'getAllProposals' : ActorMethod<[string], Array<Proposal>>,
+  'getConfig' : ActorMethod<[string], [] | [GovernanceConfig]>,
   'getGovernanceStats' : ActorMethod<
-    [Principal],
+    [string],
     {
       'succeededProposals' : bigint,
       'totalVotes' : bigint,
@@ -91,13 +91,13 @@ export interface _SERVICE {
       'activeProposals' : bigint,
     }
   >,
-  'getProposal' : ActorMethod<[Principal, ProposalId], [] | [Proposal]>,
-  'getProposalVotes' : ActorMethod<[Principal, ProposalId], Array<Vote>>,
-  'getProposalsByStatus' : ActorMethod<[Principal, ProposalStatus], Array<Proposal>>,
-  'getUserVote' : ActorMethod<[Principal, ProposalId, Principal], [] | [Vote]>,
+  'getProposal' : ActorMethod<[string, ProposalId], [] | [Proposal]>,
+  'getProposalVotes' : ActorMethod<[string, ProposalId], Array<Vote>>,
+  'getProposalsByStatus' : ActorMethod<[string, ProposalStatus], Array<Proposal>>,
+  'getUserVote' : ActorMethod<[string, ProposalId, Principal], [] | [Vote]>,
   'init' : ActorMethod<[Principal, Principal, string], undefined>,
-  'updateConfig' : ActorMethod<[Principal, GovernanceConfig], Result>,
-  'vote' : ActorMethod<[Principal, ProposalId, VoteChoice, [] | [string]], Result>,
+  'updateConfig' : ActorMethod<[string, GovernanceConfig], Result>,
+  'vote' : ActorMethod<[string, ProposalId, VoteChoice, [] | [string]], Result>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

@@ -43,21 +43,22 @@ persistent actor TreasuryCanister {
     type TokenAmount = Types.TokenAmount;
     type TreasuryError = Types.TreasuryError;
     type CommonError = Types.CommonError;
+    type DAOId = Types.DAOId;
 
     // Stable storage for upgrade persistence
     // Core financial data that must survive canister upgrades
-    private var balancesEntries : [(Principal, TreasuryBalance)] = [];
+    private var balancesEntries : [(DAOId, TreasuryBalance)] = [];
     private var nextTransactionId : Nat = 1;
     private var transactionsEntries : [(Nat, TreasuryTransaction)] = [];
     private var allowancesEntries : [(Principal, TokenAmount)] = [];
-    private var authorizedPrincipalsEntries : [(Principal, [Principal])] = [];
+    private var authorizedPrincipalsEntries : [(DAOId, [Principal])] = [];
 
     // Runtime storage - rebuilt from stable storage after upgrades
     // HashMaps provide efficient transaction and allowance management
-    private transient var balances = HashMap.HashMap<Principal, TreasuryBalance>(10, Principal.equal, Principal.hash);
+    private transient var balances = HashMap.HashMap<DAOId, TreasuryBalance>(10, Text.equal, Text.hash);
     private transient var transactions = HashMap.HashMap<Nat, TreasuryTransaction>(100, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
     private transient var allowances = HashMap.HashMap<Principal, TokenAmount>(10, Principal.equal, Principal.hash);
-    private transient var authorizedPrincipals = HashMap.HashMap<Principal, [Principal]>(10, Principal.equal, Principal.hash);
+    private transient var authorizedPrincipals = HashMap.HashMap<DAOId, [Principal]>(10, Text.equal, Text.hash);
 
     // System functions for upgrades
     system func preupgrade() {
@@ -68,11 +69,11 @@ persistent actor TreasuryCanister {
     };
 
     system func postupgrade() {
-        balances := HashMap.fromIter<Principal, TreasuryBalance>(
+        balances := HashMap.fromIter<DAOId, TreasuryBalance>(
             balancesEntries.vals(),
             balancesEntries.size(),
-            Principal.equal,
-            Principal.hash
+            Text.equal,
+            Text.hash
         );
         transactions := HashMap.fromIter<Nat, TreasuryTransaction>(
             transactionsEntries.vals(),
@@ -86,11 +87,11 @@ persistent actor TreasuryCanister {
             Principal.equal,
             Principal.hash
         );
-        authorizedPrincipals := HashMap.fromIter<Principal, [Principal]>(
+        authorizedPrincipals := HashMap.fromIter<DAOId, [Principal]>(
             authorizedPrincipalsEntries.vals(),
             authorizedPrincipalsEntries.size(),
-            Principal.equal,
-            Principal.hash
+            Text.equal,
+            Text.hash
         );
     };
 
@@ -98,7 +99,7 @@ persistent actor TreasuryCanister {
 
 
     // Deposit tokens to treasury
-    public shared(msg) func deposit(daoId: Principal, amount: TokenAmount, description: Text) : async Result<Nat, Text> {
+    public shared(msg) func deposit(daoId: DAOId, amount: TokenAmount, description: Text) : async Result<Nat, Text> {
         if (amount == 0) {
             return #err("Amount must be greater than 0");
         };
@@ -132,7 +133,7 @@ persistent actor TreasuryCanister {
 
     // Withdraw tokens from treasury (requires authorization)
     public shared(msg) func withdraw(
-        daoId: Principal,
+        daoId: DAOId,
         recipient: Principal,
         amount: TokenAmount,
         description: Text,
@@ -215,7 +216,7 @@ persistent actor TreasuryCanister {
     };
 
     // Lock tokens for specific purposes (e.g., staking rewards)
-    public shared(msg) func lockTokens(daoId: Principal, amount: TokenAmount, reason: Text) : async Result<(), Text> {
+    public shared(msg) func lockTokens(daoId: DAOId, amount: TokenAmount, reason: Text) : async Result<(), Text> {
 
         if (not isAuthorized(daoId, msg.caller)) {
             return #err("Not authorized");
@@ -251,7 +252,7 @@ persistent actor TreasuryCanister {
     };
 
     // Unlock tokens
-    public shared(msg) func unlockTokens(daoId: Principal, amount: TokenAmount, reason: Text) : async Result<(), Text> {
+    public shared(msg) func unlockTokens(daoId: DAOId, amount: TokenAmount, reason: Text) : async Result<(), Text> {
         if (not isAuthorized(daoId, msg.caller)) {
             return #err("Not authorized");
         };
@@ -286,7 +287,7 @@ persistent actor TreasuryCanister {
     };
 
     // Reserve tokens for future use
-    public shared(msg) func reserveTokens(daoId: Principal, amount: TokenAmount, reason: Text) : async Result<(), Text> {
+    public shared(msg) func reserveTokens(daoId: DAOId, amount: TokenAmount, reason: Text) : async Result<(), Text> {
         if (not isAuthorized(daoId, msg.caller)) {
             return #err("Not authorized");
         };
@@ -321,7 +322,7 @@ persistent actor TreasuryCanister {
     };
 
     // Release reserved tokens
-    public shared(msg) func releaseReservedTokens(daoId: Principal, amount: TokenAmount, reason: Text) : async Result<(), Text> {
+    public shared(msg) func releaseReservedTokens(daoId: DAOId, amount: TokenAmount, reason: Text) : async Result<(), Text> {
         if (not isAuthorized(daoId, msg.caller)) {
             return #err("Not authorized");
         };
@@ -358,7 +359,7 @@ persistent actor TreasuryCanister {
     // Query functions
 
     // Get treasury balance
-    public query func getBalance(daoId: Principal) : async TreasuryBalance {
+    public query func getBalance(daoId: DAOId) : async TreasuryBalance {
         switch (balances.get(daoId)) {
             case (?bal) { bal };
             case null {
@@ -373,7 +374,7 @@ persistent actor TreasuryCanister {
     };
 
     // Get transaction by ID
-    public query func getTransaction(transactionId: Nat, daoId: Principal) : async ?TreasuryTransaction {
+    public query func getTransaction(transactionId: Nat, daoId: DAOId) : async ?TreasuryTransaction {
         switch (transactions.get(transactionId)) {
             case (?tx) { if (tx.daoId == daoId) ?tx else null };
             case null { null };
@@ -381,7 +382,7 @@ persistent actor TreasuryCanister {
     };
 
     // Get all transactions
-    public query func getAllTransactions(daoId: Principal) : async [TreasuryTransaction] {
+    public query func getAllTransactions(daoId: DAOId) : async [TreasuryTransaction] {
         let filteredTransactions = Buffer.Buffer<TreasuryTransaction>(0);
         for (transaction in transactions.vals()) {
             if (transaction.daoId == daoId) {
@@ -392,7 +393,7 @@ persistent actor TreasuryCanister {
     };
 
     // Get transactions by type
-    public query func getTransactionsByType(daoId: Principal, transactionType: Types.TreasuryTransactionType) : async [TreasuryTransaction] {
+    public query func getTransactionsByType(daoId: DAOId, transactionType: Types.TreasuryTransactionType) : async [TreasuryTransaction] {
         let filteredTransactions = Buffer.Buffer<TreasuryTransaction>(0);
         for (transaction in transactions.vals()) {
             if (transaction.daoId == daoId and transaction.transactionType == transactionType) {
@@ -403,7 +404,7 @@ persistent actor TreasuryCanister {
     };
 
     // Get recent transactions
-    public query func getRecentTransactions(daoId: Principal, limit: Nat) : async [TreasuryTransaction] {
+    public query func getRecentTransactions(daoId: DAOId, limit: Nat) : async [TreasuryTransaction] {
         let buffer = Buffer.Buffer<TreasuryTransaction>(0);
         for (transaction in transactions.vals()) {
             if (transaction.daoId == daoId) {
@@ -425,7 +426,7 @@ persistent actor TreasuryCanister {
     };
 
     // Get treasury statistics
-    public query func getTreasuryStats(daoId: Principal) : async {
+    public query func getTreasuryStats(daoId: DAOId) : async {
         totalTransactions: Nat;
         totalDeposits: TokenAmount;
         totalWithdrawals: TokenAmount;
@@ -479,7 +480,7 @@ persistent actor TreasuryCanister {
     // Administrative functions
 
     // Add authorized principal
-    public shared(_msg) func addAuthorizedPrincipal(daoId: Principal, principal: Principal) : async Result<(), Text> {
+    public shared(_msg) func addAuthorizedPrincipal(daoId: DAOId, principal: Principal) : async Result<(), Text> {
         // In real implementation, only governance or admin should be able to do this
         let principals = Buffer.fromArray<Principal>(
             switch (authorizedPrincipals.get(daoId)) {
@@ -493,7 +494,7 @@ persistent actor TreasuryCanister {
     };
 
     // Remove authorized principal
-    public shared(_msg) func removeAuthorizedPrincipal(daoId: Principal, principal: Principal) : async Result<(), Text> {
+    public shared(_msg) func removeAuthorizedPrincipal(daoId: DAOId, principal: Principal) : async Result<(), Text> {
         // In real implementation, only governance or admin should be able to do this
         let updated = switch (authorizedPrincipals.get(daoId)) {
             case (?arr) Array.filter<Principal>(arr, func(p) = p != principal);
@@ -508,7 +509,7 @@ persistent actor TreasuryCanister {
     };
 
     // Get authorized principals
-    public query func getAuthorizedPrincipals(daoId: Principal) : async [Principal] {
+    public query func getAuthorizedPrincipals(daoId: DAOId) : async [Principal] {
         switch (authorizedPrincipals.get(daoId)) {
             case (?arr) arr;
             case null [];
@@ -516,7 +517,7 @@ persistent actor TreasuryCanister {
     };
 
     // Helper functions
-    private func getBalanceInternal(daoId: Principal) : TreasuryBalance {
+    private func getBalanceInternal(daoId: DAOId) : TreasuryBalance {
         switch (balances.get(daoId)) {
             case (?bal) { bal };
             case null {
@@ -532,7 +533,7 @@ persistent actor TreasuryCanister {
         }
     };
 
-    private func isAuthorized(daoId: Principal, principal: Principal) : Bool {
+    private func isAuthorized(daoId: DAOId, principal: Principal) : Bool {
         switch (authorizedPrincipals.get(daoId)) {
             case (?arr) { Array.find<Principal>(arr, func(p) = p == principal) != null };
             case null { false };

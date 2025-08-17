@@ -102,7 +102,7 @@ module {
     };
 
     public type Proposal = {
-        daoId: Principal;
+        daoId: DAOId;
         id: ProposalId;
         proposer: Principal;
         title: Text;
@@ -125,7 +125,7 @@ module {
     public type VoteChoice = { #inFavor; #against; #abstain };
 
     public type Vote = {
-        daoId: Principal;
+        daoId: DAOId;
         voter: Principal;
         proposalId: ProposalId;
         choice: VoteChoice;
@@ -147,7 +147,7 @@ module {
     };
 
     public type Stake = {
-        daoId: Principal;
+        daoId: DAOId;
         id: StakeId;
         staker: Principal;
         amount: TokenAmount;
@@ -176,7 +176,7 @@ module {
     public type TreasuryTransaction = {
 
         id: Nat;
-        daoId: Principal;
+        daoId: DAOId;
 
         transactionType: TreasuryTransactionType;
         amount: TokenAmount;

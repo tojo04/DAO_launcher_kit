@@ -6,7 +6,7 @@ type VoteChoice =
  };
 type Vote =
  record {
-   daoId: Principal;
+   daoId: text;
    choice: VoteChoice;
    proposalId: ProposalId;
    reason: opt text;
@@ -51,7 +51,7 @@ type ProposalStatus =
 type ProposalId = nat;
 type Proposal =
  record {
-   daoId: Principal;
+   daoId: text;
    approvalThreshold: nat;
    createdAt: Time;
    description: text;
@@ -92,13 +92,13 @@ type GovernanceConfig =
    votingPeriod: nat;
  };
 service : {
-  createProposal: (daoId: principal, title: text, description: text, proposalType:
+  createProposal: (daoId: text, title: text, description: text, proposalType:
    ProposalType, votingPeriod: opt nat) -> (Result_1);
-  executeProposal: (daoId: principal, proposalId: ProposalId) -> (Result);
-  getActiveProposals: (daoId: principal) -> (vec Proposal) query;
-  getAllProposals: (daoId: principal) -> (vec Proposal) query;
-  getConfig: (daoId: principal) -> (opt GovernanceConfig) query;
-  getGovernanceStats: (daoId: principal) ->
+  executeProposal: (daoId: text, proposalId: ProposalId) -> (Result);
+  getActiveProposals: (daoId: text) -> (vec Proposal) query;
+  getAllProposals: (daoId: text) -> (vec Proposal) query;
+  getConfig: (daoId: text) -> (opt GovernanceConfig) query;
+  getGovernanceStats: (daoId: text) ->
    (record {
       activeProposals: nat;
       failedProposals: nat;
@@ -106,12 +106,12 @@ service : {
       totalProposals: nat;
       totalVotes: nat;
     }) query;
-  getProposal: (daoId: principal, proposalId: ProposalId) -> (opt Proposal) query;
-  getProposalVotes: (daoId: principal, proposalId: ProposalId) -> (vec Vote) query;
-  getProposalsByStatus: (daoId: principal, status: ProposalStatus) -> (vec Proposal) query;
-  getUserVote: (daoId: principal, proposalId: ProposalId, user: principal) -> (opt Vote) query;
+  getProposal: (daoId: text, proposalId: ProposalId) -> (opt Proposal) query;
+  getProposalVotes: (daoId: text, proposalId: ProposalId) -> (vec Vote) query;
+  getProposalsByStatus: (daoId: text, status: ProposalStatus) -> (vec Proposal) query;
+  getUserVote: (daoId: text, proposalId: ProposalId, user: principal) -> (opt Vote) query;
    init: (newDaoId: principal, newStakingId: principal, daoInstanceId: text) -> ();
-  updateConfig: (daoId: principal, newConfig: GovernanceConfig) -> (Result);
-  vote: (daoId: principal, proposalId: ProposalId, choice: VoteChoice, reason: opt text) ->
+  updateConfig: (daoId: text, newConfig: GovernanceConfig) -> (Result);
+  vote: (daoId: text, proposalId: ProposalId, choice: VoteChoice, reason: opt text) ->
    (Result);
 }

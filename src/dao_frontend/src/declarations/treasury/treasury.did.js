@@ -14,7 +14,7 @@ export const idlFactory = ({ IDL }) => {
   const ProposalId = IDL.Nat;
   const TreasuryTransaction = IDL.Record({
     'id' : IDL.Nat,
-    'daoId' : Principal,
+    'daoId' : IDL.Text,
     'transactionType' : TreasuryTransactionType,
     'amount' : TokenAmount,
     'from' : IDL.Opt(Principal),
@@ -35,36 +35,36 @@ export const idlFactory = ({ IDL }) => {
     'available' : TokenAmount,
   });
   return IDL.Service({
-    'addAuthorizedPrincipal' : IDL.Func([Principal, IDL.Principal], [Result_1], []),
-    'deposit' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result], []),
+    'addAuthorizedPrincipal' : IDL.Func([IDL.Text, IDL.Principal], [Result_1], []),
+    'deposit' : IDL.Func([IDL.Text, TokenAmount, IDL.Text], [Result], []),
     'getAllTransactions' : IDL.Func(
-        [Principal],
+        [IDL.Text],
         [IDL.Vec(TreasuryTransaction)],
         ['query'],
       ),
     'getAuthorizedPrincipals' : IDL.Func(
-        [Principal],
+        [IDL.Text],
         [IDL.Vec(IDL.Principal)],
         ['query'],
       ),
-    'getBalance' : IDL.Func([Principal], [TreasuryBalance], ['query']),
+    'getBalance' : IDL.Func([IDL.Text], [TreasuryBalance], ['query']),
     'getRecentTransactions' : IDL.Func(
-        [Principal, IDL.Nat],
+        [IDL.Text, IDL.Nat],
         [IDL.Vec(TreasuryTransaction)],
         ['query'],
       ),
     'getTransaction' : IDL.Func(
-        [IDL.Nat, Principal],
+        [IDL.Nat, IDL.Text],
         [IDL.Opt(TreasuryTransaction)],
         ['query'],
       ),
     'getTransactionsByType' : IDL.Func(
-        [Principal, TreasuryTransactionType],
+        [IDL.Text, TreasuryTransactionType],
         [IDL.Vec(TreasuryTransaction)],
         ['query'],
       ),
     'getTreasuryStats' : IDL.Func(
-        [Principal],
+        [IDL.Text],
         [
           IDL.Record({
             'balance' : TreasuryBalance,
@@ -76,13 +76,13 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
-    'lockTokens' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result_1], []),
-    'releaseReservedTokens' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result_1], []),
-    'removeAuthorizedPrincipal' : IDL.Func([Principal, IDL.Principal], [Result_1], []),
-    'reserveTokens' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result_1], []),
-    'unlockTokens' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result_1], []),
+    'lockTokens' : IDL.Func([IDL.Text, TokenAmount, IDL.Text], [Result_1], []),
+    'releaseReservedTokens' : IDL.Func([IDL.Text, TokenAmount, IDL.Text], [Result_1], []),
+    'removeAuthorizedPrincipal' : IDL.Func([IDL.Text, IDL.Principal], [Result_1], []),
+    'reserveTokens' : IDL.Func([IDL.Text, TokenAmount, IDL.Text], [Result_1], []),
+    'unlockTokens' : IDL.Func([IDL.Text, TokenAmount, IDL.Text], [Result_1], []),
     'withdraw' : IDL.Func(
-        [Principal, IDL.Principal, TokenAmount, IDL.Text, IDL.Opt(ProposalId)],
+        [IDL.Text, IDL.Principal, TokenAmount, IDL.Text, IDL.Opt(ProposalId)],
         [Result],
         [],
       ),

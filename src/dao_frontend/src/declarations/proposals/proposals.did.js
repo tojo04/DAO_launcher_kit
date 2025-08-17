@@ -41,6 +41,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const Time = IDL.Int;
   const Proposal = IDL.Record({
+    'daoId' : IDL.Text,
     'id' : ProposalId,
     'status' : ProposalStatus,
     'title' : IDL.Text,
@@ -72,27 +73,28 @@ export const idlFactory = ({ IDL }) => {
   });
   return IDL.Service({
     'addCategory' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [Result],
         [],
       ),
     'addTemplate' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text), IDL.Text],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text), IDL.Text],
         [Result_2],
         [],
       ),
     'batchVote' : IDL.Func(
-        [IDL.Vec(IDL.Tuple(ProposalId, VoteChoice, IDL.Opt(IDL.Text)))],
+        [IDL.Text, IDL.Vec(IDL.Tuple(ProposalId, VoteChoice, IDL.Opt(IDL.Text)))],
         [IDL.Vec(Result)],
         [],
       ),
     'createProposal' : IDL.Func(
-        [IDL.Text, IDL.Text, ProposalType, IDL.Opt(IDL.Text), IDL.Opt(IDL.Nat)],
+        [IDL.Text, IDL.Text, IDL.Text, ProposalType, IDL.Opt(IDL.Text), IDL.Opt(IDL.Nat)],
         [Result_1],
         [],
       ),
     'createProposalFromTemplate' : IDL.Func(
         [
+          IDL.Text,
           IDL.Nat,
           IDL.Text,
           IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
@@ -101,15 +103,15 @@ export const idlFactory = ({ IDL }) => {
         [Result_1],
         [],
       ),
-    'getAllProposals' : IDL.Func([], [IDL.Vec(Proposal)], ['query']),
-    'getProposal' : IDL.Func([ProposalId], [IDL.Opt(Proposal)], ['query']),
+    'getAllProposals' : IDL.Func([IDL.Text], [IDL.Vec(Proposal)], ['query']),
+    'getProposal' : IDL.Func([IDL.Text, ProposalId], [IDL.Opt(Proposal)], ['query']),
     'getProposalCategories' : IDL.Func(
-        [],
+        [IDL.Text],
         [IDL.Vec(ProposalCategory)],
         ['query'],
       ),
     'getProposalStats' : IDL.Func(
-        [],
+        [IDL.Text],
         [
           IDL.Record({
             'succeededProposals' : IDL.Nat,
@@ -124,29 +126,29 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getProposalTemplates' : IDL.Func(
-        [],
+        [IDL.Text],
         [IDL.Vec(ProposalTemplate)],
         ['query'],
       ),
     'getProposalsByCategory' : IDL.Func(
-        [IDL.Text],
+        [IDL.Text, IDL.Text],
         [IDL.Vec(Proposal)],
         ['query'],
       ),
-    'getTemplate' : IDL.Func([IDL.Nat], [IDL.Opt(ProposalTemplate)], ['query']),
+    'getTemplate' : IDL.Func([IDL.Text, IDL.Nat], [IDL.Opt(ProposalTemplate)], ['query']),
     'getTemplatesByCategory' : IDL.Func(
-        [IDL.Text],
+        [IDL.Text, IDL.Text],
         [IDL.Vec(ProposalTemplate)],
         ['query'],
       ),
     'getTrendingProposals' : IDL.Func(
-        [IDL.Nat],
+        [IDL.Text, IDL.Nat],
         [IDL.Vec(Proposal)],
         ['query'],
       ),
     'init' : IDL.Func([IDL.Principal], [], ['oneway']),
     'vote' : IDL.Func(
-        [ProposalId, VoteChoice, IDL.Opt(IDL.Text)],
+        [IDL.Text, ProposalId, VoteChoice, IDL.Opt(IDL.Text)],
         [Result],
         [],
       ),

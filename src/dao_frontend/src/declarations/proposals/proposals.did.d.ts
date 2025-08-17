@@ -15,6 +15,7 @@ export interface ParameterChangeProposal {
 }
 export type Principal = Principal;
 export interface Proposal {
+  'daoId' : string,
   'id' : ProposalId,
   'status' : ProposalStatus,
   'title' : string,
@@ -72,28 +73,28 @@ export type VoteChoice = { 'against' : null } |
   { 'abstain' : null } |
   { 'inFavor' : null };
 export interface _SERVICE {
-  'addCategory' : ActorMethod<[string, string, string, string], Result>,
+  'addCategory' : ActorMethod<[string, string, string, string, string], Result>,
   'addTemplate' : ActorMethod<
-    [string, string, string, Array<string>, string],
+    [string, string, string, string, Array<string>, string],
     Result_2
   >,
   'batchVote' : ActorMethod<
-    [Array<[ProposalId, VoteChoice, [] | [string]]>],
+    [string, Array<[ProposalId, VoteChoice, [] | [string]]>],
     Array<Result>
   >,
   'createProposal' : ActorMethod<
-    [string, string, ProposalType, [] | [string], [] | [bigint]],
+    [string, string, string, ProposalType, [] | [string], [] | [bigint]],
     Result_1
   >,
   'createProposalFromTemplate' : ActorMethod<
-    [bigint, string, Array<[string, string]>, [] | [bigint]],
+    [string, bigint, string, Array<[string, string]>, [] | [bigint]],
     Result_1
   >,
-  'getAllProposals' : ActorMethod<[], Array<Proposal>>,
-  'getProposal' : ActorMethod<[ProposalId], [] | [Proposal]>,
-  'getProposalCategories' : ActorMethod<[], Array<ProposalCategory>>,
+  'getAllProposals' : ActorMethod<[string], Array<Proposal>>,
+  'getProposal' : ActorMethod<[string, ProposalId], [] | [Proposal]>,
+  'getProposalCategories' : ActorMethod<[string], Array<ProposalCategory>>,
   'getProposalStats' : ActorMethod<
-    [],
+    [string],
     {
       'succeededProposals' : bigint,
       'totalVotes' : bigint,
@@ -104,13 +105,13 @@ export interface _SERVICE {
       'activeProposals' : bigint,
     }
   >,
-  'getProposalTemplates' : ActorMethod<[], Array<ProposalTemplate>>,
-  'getProposalsByCategory' : ActorMethod<[string], Array<Proposal>>,
-  'getTemplate' : ActorMethod<[bigint], [] | [ProposalTemplate]>,
-  'getTemplatesByCategory' : ActorMethod<[string], Array<ProposalTemplate>>,
-  'getTrendingProposals' : ActorMethod<[bigint], Array<Proposal>>,
+  'getProposalTemplates' : ActorMethod<[string], Array<ProposalTemplate>>,
+  'getProposalsByCategory' : ActorMethod<[string, string], Array<Proposal>>,
+  'getTemplate' : ActorMethod<[string, bigint], [] | [ProposalTemplate]>,
+  'getTemplatesByCategory' : ActorMethod<[string, string], Array<ProposalTemplate>>,
+  'getTrendingProposals' : ActorMethod<[string, bigint], Array<Proposal>>,
   'init' : ActorMethod<[Principal], undefined>,
-  'vote' : ActorMethod<[ProposalId, VoteChoice, [] | [string]], Result>,
+  'vote' : ActorMethod<[string, ProposalId, VoteChoice, [] | [string]], Result>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

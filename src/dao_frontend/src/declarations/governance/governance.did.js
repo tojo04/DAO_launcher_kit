@@ -35,7 +35,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const Time = IDL.Int;
   const Proposal = IDL.Record({
-    'daoId' : Principal,
+    'daoId' : IDL.Text,
     'id' : ProposalId,
     'status' : ProposalStatus,
     'title' : IDL.Text,
@@ -64,7 +64,7 @@ export const idlFactory = ({ IDL }) => {
     'inFavor' : IDL.Null,
   });
   const Vote = IDL.Record({
-    'daoId' : Principal,
+    'daoId' : IDL.Text,
     'votingPower' : IDL.Nat,
     'voter' : Principal,
     'timestamp' : Time,
@@ -74,16 +74,16 @@ export const idlFactory = ({ IDL }) => {
   });
   return IDL.Service({
     'createProposal' : IDL.Func(
-        [Principal, IDL.Text, IDL.Text, ProposalType, IDL.Opt(IDL.Nat)],
+        [IDL.Text, IDL.Text, IDL.Text, ProposalType, IDL.Opt(IDL.Nat)],
         [Result_1],
         [],
       ),
-    'executeProposal' : IDL.Func([Principal, ProposalId], [Result], []),
-    'getActiveProposals' : IDL.Func([Principal], [IDL.Vec(Proposal)], ['query']),
-    'getAllProposals' : IDL.Func([Principal], [IDL.Vec(Proposal)], ['query']),
-    'getConfig' : IDL.Func([Principal], [IDL.Opt(GovernanceConfig)], ['query']),
+    'executeProposal' : IDL.Func([IDL.Text, ProposalId], [Result], []),
+    'getActiveProposals' : IDL.Func([IDL.Text], [IDL.Vec(Proposal)], ['query']),
+    'getAllProposals' : IDL.Func([IDL.Text], [IDL.Vec(Proposal)], ['query']),
+    'getConfig' : IDL.Func([IDL.Text], [IDL.Opt(GovernanceConfig)], ['query']),
     'getGovernanceStats' : IDL.Func(
-        [Principal],
+        [IDL.Text],
         [
           IDL.Record({
             'succeededProposals' : IDL.Nat,
@@ -95,22 +95,22 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
-    'getProposal' : IDL.Func([Principal, ProposalId], [IDL.Opt(Proposal)], ['query']),
-    'getProposalVotes' : IDL.Func([Principal, ProposalId], [IDL.Vec(Vote)], ['query']),
+    'getProposal' : IDL.Func([IDL.Text, ProposalId], [IDL.Opt(Proposal)], ['query']),
+    'getProposalVotes' : IDL.Func([IDL.Text, ProposalId], [IDL.Vec(Vote)], ['query']),
     'getProposalsByStatus' : IDL.Func(
-        [Principal, ProposalStatus],
+        [IDL.Text, ProposalStatus],
         [IDL.Vec(Proposal)],
         ['query'],
       ),
     'getUserVote' : IDL.Func(
-        [Principal, ProposalId, IDL.Principal],
+        [IDL.Text, ProposalId, IDL.Principal],
         [IDL.Opt(Vote)],
         ['query'],
       ),
     'init' : IDL.Func([IDL.Principal, IDL.Principal, IDL.Text], [], []),
-    'updateConfig' : IDL.Func([Principal, GovernanceConfig], [Result], []),
+    'updateConfig' : IDL.Func([IDL.Text, GovernanceConfig], [Result], []),
     'vote' : IDL.Func(
-        [Principal, ProposalId, VoteChoice, IDL.Opt(IDL.Text)],
+        [IDL.Text, ProposalId, VoteChoice, IDL.Opt(IDL.Text)],
         [Result],
         [],
       ),
