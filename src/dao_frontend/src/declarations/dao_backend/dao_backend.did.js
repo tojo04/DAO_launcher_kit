@@ -38,7 +38,7 @@ export const idlFactory = ({ IDL }) => {
   const TokenAmount = IDL.Nat;
   const DAOStats = IDL.Record({
     'treasuryBalance' : TokenAmount,
-    'totalVotingPower' : IDL.Nat,
+    'totalVotes' : IDL.Nat,
     'totalProposals' : IDL.Nat,
     'totalMembers' : IDL.Nat,
     'totalStaked' : TokenAmount,

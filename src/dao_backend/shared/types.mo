@@ -221,7 +221,7 @@ module {
         activeProposals: Nat;
         totalStaked: TokenAmount;
         treasuryBalance: TokenAmount;
-        totalVotingPower: Nat;
+        totalVotes: Nat;
     };
 
     // Error types

@@ -445,7 +445,7 @@ persistent actor DAOMain {
                 var activeProposals : Nat = 0;
                 var totalStaked : TokenAmount = 0;
                 var treasuryBalance : TokenAmount = 0;
-                var totalVotingPower : Nat = 0;
+                var totalVotes : Nat = 0;
 
                 // Proposals statistics
                 switch (state.proposalsCanister) {
@@ -475,7 +475,7 @@ persistent actor DAOMain {
                         } = actor(Principal.toText(canisterId));
                         try {
                             let stats = await governance.getGovernanceStats(daoPrincipal);
-                            totalVotingPower := stats.totalVotes;
+                            totalVotes := stats.totalVotes;
                         } catch (_) {};
                     };
                     case null {};
@@ -521,7 +521,7 @@ persistent actor DAOMain {
                     activeProposals = activeProposals;
                     totalStaked = totalStaked;
                     treasuryBalance = treasuryBalance;
-                    totalVotingPower = totalVotingPower;
+                    totalVotes = totalVotes;
                 }
             };
             case null {
@@ -531,7 +531,7 @@ persistent actor DAOMain {
                     activeProposals = 0;
                     totalStaked = 0;
                     treasuryBalance = 0;
-                    totalVotingPower = 0;
+                    totalVotes = 0;
                 }
             }
         }
