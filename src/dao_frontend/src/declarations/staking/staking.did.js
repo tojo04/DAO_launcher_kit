@@ -13,14 +13,15 @@ export const idlFactory = ({ IDL }) => {
   const Principal = IDL.Principal;
   const Time = IDL.Int;
   const Stake = IDL.Record({
-    'id' : StakeId,
-    'staker' : Principal,
-    'unlocksAt' : IDL.Opt(Time),
-    'stakedAt' : Time,
-    'isActive' : IDL.Bool,
-    'stakingPeriod' : StakingPeriod,
-    'rewards' : TokenAmount,
+    'daoId' : Principal,
     'amount' : TokenAmount,
+    'id' : StakeId,
+    'isActive' : IDL.Bool,
+    'rewards' : TokenAmount,
+    'stakedAt' : Time,
+    'staker' : Principal,
+    'stakingPeriod' : StakingPeriod,
+    'unlocksAt' : IDL.Opt(Time),
   });
   const StakingRewards = IDL.Record({
     'apr' : IDL.Float64,
@@ -30,16 +31,20 @@ export const idlFactory = ({ IDL }) => {
   });
   const Result_1 = IDL.Variant({ 'ok' : StakeId, 'err' : IDL.Text });
   return IDL.Service({
-    'claimRewards' : IDL.Func([StakeId], [Result], []),
-    'extendStakingPeriod' : IDL.Func([StakeId, StakingPeriod], [Result_2], []),
-    'getStake' : IDL.Func([StakeId], [IDL.Opt(Stake)], ['query']),
+    'claimRewards' : IDL.Func([Principal, StakeId], [Result], []),
+    'extendStakingPeriod' : IDL.Func(
+        [Principal, StakeId, StakingPeriod],
+        [Result_2],
+        [],
+      ),
+    'getStake' : IDL.Func([Principal, StakeId], [IDL.Opt(Stake)], ['query']),
     'getStakingRewards' : IDL.Func(
-        [StakeId],
+        [Principal, StakeId],
         [IDL.Opt(StakingRewards)],
         ['query'],
       ),
     'getStakingStats' : IDL.Func(
-        [],
+        [Principal],
         [
           IDL.Record({
             'stakingPeriodDistribution' : IDL.Vec(
@@ -55,13 +60,17 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getUserActiveStakes' : IDL.Func(
-        [IDL.Principal],
+        [Principal, IDL.Principal],
         [IDL.Vec(Stake)],
         ['query'],
       ),
-    'getUserStakes' : IDL.Func([IDL.Principal], [IDL.Vec(Stake)], ['query']),
+    'getUserStakes' : IDL.Func(
+        [Principal, IDL.Principal],
+        [IDL.Vec(Stake)],
+        ['query'],
+      ),
     'getUserStakingSummary' : IDL.Func(
-        [IDL.Principal],
+        [Principal, IDL.Principal],
         [
           IDL.Record({
             'totalRewards' : TokenAmount,
@@ -75,8 +84,8 @@ export const idlFactory = ({ IDL }) => {
     'setMaximumStakeAmount' : IDL.Func([TokenAmount], [Result_2], []),
     'setMinimumStakeAmount' : IDL.Func([TokenAmount], [Result_2], []),
     'setStakingEnabled' : IDL.Func([IDL.Bool], [Result_2], []),
-    'stake' : IDL.Func([TokenAmount, StakingPeriod], [Result_1], []),
-    'unstake' : IDL.Func([StakeId], [Result], []),
+    'stake' : IDL.Func([Principal, TokenAmount, StakingPeriod], [Result_1], []),
+    'unstake' : IDL.Func([Principal, StakeId], [Result], []),
   });
 };
 export const init = ({ IDL }) => { return []; };

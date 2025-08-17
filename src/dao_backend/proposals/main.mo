@@ -54,7 +54,7 @@ persistent actor ProposalsCanister {
 
     // Inter-canister reference to staking for voting power
     var staking : actor {
-        getUserStakingSummary: shared query (Principal) -> async {
+        getUserStakingSummary: shared query (Principal, Principal) -> async {
             totalStaked: Nat;
             totalRewards: Nat;
             activeStakes: Nat;
@@ -318,7 +318,7 @@ persistent actor ProposalsCanister {
 
         // Determine voting power from staking
         let summary = try {
-            await staking.getUserStakingSummary(caller)
+            await staking.getUserStakingSummary(daoId, caller)
         } catch (_) {
             return #err("Failed to get staking summary");
         };

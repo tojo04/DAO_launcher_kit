@@ -66,7 +66,7 @@ persistent actor GovernanceCanister {
     // Inter-canister communication setup
     // Actor reference for staking canister
     var staking : actor {
-        getUserStakingSummary: shared query (Principal) -> async {
+        getUserStakingSummary: shared query (Principal, Principal) -> async {
             totalStaked: Nat;
             totalRewards: Nat;
             activeStakes: Nat;
@@ -271,7 +271,7 @@ persistent actor GovernanceCanister {
         };
 
         // Determine voting power from staking data
-        let summary = await staking.getUserStakingSummary(caller);
+        let summary = await staking.getUserStakingSummary(daoId, caller);
         let votingPower = summary.totalVotingPower;
         if (votingPower == 0) {
             return #err("No voting power");
