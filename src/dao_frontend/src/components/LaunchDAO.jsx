@@ -52,6 +52,7 @@ const LaunchDAO = () => {
     description: '',
     category: '',
     website: '',
+    logo: '',
     
     // Step 2: Module Selection
     selectedModules: ['governance', 'treasury'], // Required modules
@@ -168,6 +169,16 @@ const LaunchDAO = () => {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: null }));
     }
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      handleInputChange('logo', reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleModuleToggle = (moduleId) => {
@@ -323,6 +334,7 @@ const LaunchDAO = () => {
         description: formData.description,
         category: formData.category,
         tokenSymbol: formData.tokenSymbol,
+        logo: formData.logo || undefined,
         memberCount: 1,
         totalValueLocked: '$0',
         status: 'active',
@@ -448,6 +460,23 @@ const LaunchDAO = () => {
                 placeholder="https://your-dao-website.com"
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Logo (Optional)</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono"
+              />
+              {formData.logo && (
+                <img
+                  src={formData.logo}
+                  alt="DAO Logo Preview"
+                  className="mt-2 h-24 w-24 object-cover rounded-lg"
+                />
+              )}
             </div>
           </div>
         );
