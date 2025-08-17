@@ -92,13 +92,14 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Text],
         [
           IDL.Record({
-            'passedProposals' : IDL.Nat,
-            'totalVotingPower' : IDL.Nat,
-            'totalProposals' : IDL.Nat,
             'activeProposals' : IDL.Nat,
+            'failedProposals' : IDL.Nat,
+            'succeededProposals' : IDL.Nat,
+            'totalProposals' : IDL.Nat,
+            'totalVotes' : IDL.Nat,
           }),
         ],
-        [],
+        ['query'],
       ),
     'getUserProfile' : IDL.Func(
         [IDL.Text, IDL.Principal],

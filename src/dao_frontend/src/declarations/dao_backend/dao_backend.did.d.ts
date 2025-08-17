@@ -86,10 +86,11 @@ export interface _SERVICE {
   'getGovernanceStats' : ActorMethod<
     [string],
     {
-      'passedProposals' : bigint,
-      'totalVotingPower' : bigint,
-      'totalProposals' : bigint,
       'activeProposals' : bigint,
+      'failedProposals' : bigint,
+      'succeededProposals' : bigint,
+      'totalProposals' : bigint,
+      'totalVotes' : bigint,
     }
   >,
   'getUserProfile' : ActorMethod<[string, Principal], [] | [UserProfile]>,

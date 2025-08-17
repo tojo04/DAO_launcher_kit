@@ -91,10 +91,11 @@ service : {
   getGovernanceStats: (daoId: text) ->
    (record {
       activeProposals: nat;
-      passedProposals: nat;
+      failedProposals: nat;
+      succeededProposals: nat;
       totalProposals: nat;
-      totalVotingPower: nat;
-    });
+      totalVotes: nat;
+    }) query;
   getUserProfile: (daoId: text, userId: principal) -> (opt UserProfile) query;
   greet: (daoId: text, name: text) -> (text) query;
   health: () -> (record {
