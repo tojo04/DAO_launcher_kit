@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { AuthClient } from '@dfinity/auth-client';
 
 // Create the AuthContext
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 // AuthProvider component to wrap the app and provide auth state
 
