@@ -45,10 +45,10 @@ type Result =
 type ProposalId = nat;
 type Principal = principal;
 service : {
-  addAuthorizedPrincipal: ("principal": principal) -> (Result_1);
+  addAuthorizedPrincipal: (daoId: Principal, "principal": principal) -> (Result_1);
   deposit: (daoId: Principal, amount: TokenAmount, description: text) -> (Result);
   getAllTransactions: (daoId: Principal) -> (vec TreasuryTransaction) query;
-  getAuthorizedPrincipals: () -> (vec principal) query;
+  getAuthorizedPrincipals: (daoId: Principal) -> (vec principal) query;
   getBalance: (daoId: Principal) -> (TreasuryBalance) query;
   getRecentTransactions: (daoId: Principal, limit: nat) -> (vec TreasuryTransaction) query;
   getTransaction: (transactionId: nat, daoId: Principal) -> (opt TreasuryTransaction) query;
@@ -64,7 +64,7 @@ service : {
     }) query;
   lockTokens: (daoId: Principal, amount: TokenAmount, reason: text) -> (Result_1);
   releaseReservedTokens: (daoId: Principal, amount: TokenAmount, reason: text) -> (Result_1);
-  removeAuthorizedPrincipal: ("principal": principal) -> (Result_1);
+  removeAuthorizedPrincipal: (daoId: Principal, "principal": principal) -> (Result_1);
   reserveTokens: (daoId: Principal, amount: TokenAmount, reason: text) -> (Result_1);
   unlockTokens: (daoId: Principal, amount: TokenAmount, reason: text) -> (Result_1);
   withdraw: (daoId: Principal, recipient: principal, amount: TokenAmount, description:

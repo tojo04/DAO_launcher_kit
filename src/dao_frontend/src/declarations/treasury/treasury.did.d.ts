@@ -36,10 +36,10 @@ export type TreasuryTransactionType = { 'fee' : null } |
   { 'withdrawal' : null } |
   { 'proposalExecution' : null };
 export interface _SERVICE {
-  'addAuthorizedPrincipal' : ActorMethod<[Principal], Result_1>,
+  'addAuthorizedPrincipal' : ActorMethod<[Principal, Principal], Result_1>,
   'deposit' : ActorMethod<[Principal, TokenAmount, string], Result>,
   'getAllTransactions' : ActorMethod<[Principal], Array<TreasuryTransaction>>,
-  'getAuthorizedPrincipals' : ActorMethod<[], Array<Principal>>,
+  'getAuthorizedPrincipals' : ActorMethod<[Principal], Array<Principal>>,
   'getBalance' : ActorMethod<[Principal], TreasuryBalance>,
   'getRecentTransactions' : ActorMethod<[Principal, bigint], Array<TreasuryTransaction>>,
   'getTransaction' : ActorMethod<[bigint, Principal], [] | [TreasuryTransaction]>,
@@ -59,7 +59,7 @@ export interface _SERVICE {
   >,
   'lockTokens' : ActorMethod<[Principal, TokenAmount, string], Result_1>,
   'releaseReservedTokens' : ActorMethod<[Principal, TokenAmount, string], Result_1>,
-  'removeAuthorizedPrincipal' : ActorMethod<[Principal], Result_1>,
+  'removeAuthorizedPrincipal' : ActorMethod<[Principal, Principal], Result_1>,
   'reserveTokens' : ActorMethod<[Principal, TokenAmount, string], Result_1>,
   'unlockTokens' : ActorMethod<[Principal, TokenAmount, string], Result_1>,
   'withdraw' : ActorMethod<
