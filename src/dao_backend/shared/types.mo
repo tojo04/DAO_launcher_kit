@@ -97,6 +97,7 @@ module {
     };
 
     public type Proposal = {
+        daoId: Principal;
         id: ProposalId;
         proposer: Principal;
         title: Text;
@@ -115,8 +116,9 @@ module {
 
     // Voting types
     public type VoteChoice = { #inFavor; #against; #abstain };
-    
+
     public type Vote = {
+        daoId: Principal;
         voter: Principal;
         proposalId: ProposalId;
         choice: VoteChoice;
