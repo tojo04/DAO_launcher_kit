@@ -183,10 +183,10 @@ export class DAOAPIWrapper {
         );
     }
 
-    async createProposal(daoId, title, description, proposalType) {
+    async createProposal(daoId, title, description, proposalType, category, votingPeriod) {
         const id = this.ensureDaoId(daoId);
         return this.callAPI(
-            () => this.actors.daoBackend.createProposal(id, title, description, proposalType),
+            () => this.actors.daoBackend.createProposal(id, title, description, proposalType, category, votingPeriod),
             'Create Proposal'
         );
     }
