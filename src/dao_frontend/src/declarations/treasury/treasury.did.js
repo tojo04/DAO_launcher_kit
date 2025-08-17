@@ -14,18 +14,19 @@ export const idlFactory = ({ IDL }) => {
   const ProposalId = IDL.Nat;
   const TreasuryTransaction = IDL.Record({
     'id' : IDL.Nat,
+    'daoId' : Principal,
+    'transactionType' : TreasuryTransactionType,
+    'amount' : TokenAmount,
+    'from' : IDL.Opt(Principal),
     'to' : IDL.Opt(Principal),
+    'timestamp' : Time,
+    'proposalId' : IDL.Opt(ProposalId),
+    'description' : IDL.Text,
     'status' : IDL.Variant({
       'pending' : IDL.Null,
       'completed' : IDL.Null,
       'failed' : IDL.Null,
     }),
-    'transactionType' : TreasuryTransactionType,
-    'from' : IDL.Opt(Principal),
-    'description' : IDL.Text,
-    'timestamp' : Time,
-    'amount' : TokenAmount,
-    'proposalId' : IDL.Opt(ProposalId),
   });
   const TreasuryBalance = IDL.Record({
     'total' : TokenAmount,
@@ -35,9 +36,9 @@ export const idlFactory = ({ IDL }) => {
   });
   return IDL.Service({
     'addAuthorizedPrincipal' : IDL.Func([IDL.Principal], [Result_1], []),
-    'deposit' : IDL.Func([TokenAmount, IDL.Text], [Result], []),
+    'deposit' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result], []),
     'getAllTransactions' : IDL.Func(
-        [],
+        [Principal],
         [IDL.Vec(TreasuryTransaction)],
         ['query'],
       ),
@@ -46,24 +47,24 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Principal)],
         ['query'],
       ),
-    'getBalance' : IDL.Func([], [TreasuryBalance], ['query']),
+    'getBalance' : IDL.Func([Principal], [TreasuryBalance], ['query']),
     'getRecentTransactions' : IDL.Func(
-        [IDL.Nat],
+        [Principal, IDL.Nat],
         [IDL.Vec(TreasuryTransaction)],
         ['query'],
       ),
     'getTransaction' : IDL.Func(
-        [IDL.Nat],
+        [IDL.Nat, Principal],
         [IDL.Opt(TreasuryTransaction)],
         ['query'],
       ),
     'getTransactionsByType' : IDL.Func(
-        [TreasuryTransactionType],
+        [Principal, TreasuryTransactionType],
         [IDL.Vec(TreasuryTransaction)],
         ['query'],
       ),
     'getTreasuryStats' : IDL.Func(
-        [],
+        [Principal],
         [
           IDL.Record({
             'balance' : TreasuryBalance,
@@ -75,13 +76,13 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
-    'lockTokens' : IDL.Func([TokenAmount, IDL.Text], [Result_1], []),
-    'releaseReservedTokens' : IDL.Func([TokenAmount, IDL.Text], [Result_1], []),
+    'lockTokens' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result_1], []),
+    'releaseReservedTokens' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result_1], []),
     'removeAuthorizedPrincipal' : IDL.Func([IDL.Principal], [Result_1], []),
-    'reserveTokens' : IDL.Func([TokenAmount, IDL.Text], [Result_1], []),
-    'unlockTokens' : IDL.Func([TokenAmount, IDL.Text], [Result_1], []),
+    'reserveTokens' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result_1], []),
+    'unlockTokens' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result_1], []),
     'withdraw' : IDL.Func(
-        [IDL.Principal, TokenAmount, IDL.Text, IDL.Opt(ProposalId)],
+        [Principal, IDL.Principal, TokenAmount, IDL.Text, IDL.Opt(ProposalId)],
         [Result],
         [],
       ),

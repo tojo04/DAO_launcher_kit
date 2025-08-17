@@ -164,6 +164,7 @@ module {
 
     public type TreasuryTransaction = {
         id: Nat;
+        daoId: Principal;
         transactionType: TreasuryTransactionType;
         amount: TokenAmount;
         from: ?Principal;
