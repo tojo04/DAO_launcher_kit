@@ -8,11 +8,18 @@ export const useProposals = () => {
 
   const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
 
-  const createProposal = async (title, description, category, votingPeriod) => {
+  const createProposal = async (
+    daoId,
+    title,
+    description,
+    category,
+    votingPeriod
+  ) => {
     setLoading(true);
     setError(null);
     try {
       const res = await actors.proposals.createProposal(
+        daoId,
         title,
         description,
         { textProposal: '' },
@@ -29,11 +36,11 @@ export const useProposals = () => {
     }
   };
 
-  const getAllProposals = async () => {
+  const getAllProposals = async (daoId) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.proposals.getAllProposals();
+      return await actors.proposals.getAllProposals(daoId);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -42,11 +49,11 @@ export const useProposals = () => {
     }
   };
 
-  const getProposalsByCategory = async (category) => {
+  const getProposalsByCategory = async (daoId, category) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.proposals.getProposalsByCategory(category);
+      return await actors.proposals.getProposalsByCategory(daoId, category);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -55,11 +62,11 @@ export const useProposals = () => {
     }
   };
 
-  const getProposalTemplates = async () => {
+  const getProposalTemplates = async (daoId) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.proposals.getProposalTemplates();
+      return await actors.proposals.getProposalTemplates(daoId);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -68,12 +75,13 @@ export const useProposals = () => {
     }
   };
 
-  const vote = async (proposalId, choice, reason) => {
+  const vote = async (daoId, proposalId, choice, reason) => {
     setLoading(true);
     setError(null);
     try {
       const choiceVariant = { [choice]: null };
       const res = await actors.proposals.vote(
+        daoId,
         BigInt(proposalId),
         choiceVariant,
         reason ? [reason] : []

@@ -12,7 +12,7 @@ const ManagementProposals: React.FC = () => {
 
   const loadProposals = async () => {
     try {
-      const res = await getAllProposals();
+      const res = await getAllProposals(dao.id);
       setProposals(res);
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -30,7 +30,7 @@ const ManagementProposals: React.FC = () => {
     if (!title) return;
     const description = prompt('Proposal description') || '';
     try {
-      await createProposal(title, description);
+      await createProposal(dao.id, title, description);
       await loadProposals();
     } catch (err) {
       // eslint-disable-next-line no-console
