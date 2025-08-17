@@ -108,6 +108,7 @@ module {
         title: Text;
         description: Text;
         proposalType: ProposalType;
+        category: ?Text;
         status: ProposalStatus;
 
         votesInFavor: Nat;
