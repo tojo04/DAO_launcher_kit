@@ -429,54 +429,122 @@ persistent actor DAOMain {
         []
     };
 
-    // Governance operations (temporary implementation until governance canister is ready)
-    public func getGovernanceStats() : async {
+    // Governance operations routed to dedicated canisters
+    public func getGovernanceStats(daoId: DAOId) : async {
         totalProposals: Nat;
         activeProposals: Nat;
         passedProposals: Nat;
         totalVotingPower: Nat;
     } {
-        // Temporary static data until governance canister is implemented
-        {
-            totalProposals = 0;
-            activeProposals = 0;
-            passedProposals = 0;
-            totalVotingPower = 0;
+        switch (daoStates.get(daoId)) {
+            case (?state) {
+                switch (state.governanceCanister) {
+                    case (?canisterId) {
+                        let governance : actor {
+                            getGovernanceStats : shared query (Principal) -> async {
+                                totalProposals: Nat;
+                                activeProposals: Nat;
+                                succeededProposals: Nat;
+                                failedProposals: Nat;
+                                totalVotes: Nat;
+                            };
+                        } = actor(Principal.toText(canisterId));
+                        let stats = await governance.getGovernanceStats(Principal.fromText(daoId));
+                        {
+                            totalProposals = stats.totalProposals;
+                            activeProposals = stats.activeProposals;
+                            passedProposals = stats.succeededProposals;
+                            totalVotingPower = stats.totalVotes;
+                        }
+                    };
+                    case null {
+                        {
+                            totalProposals = 0;
+                            activeProposals = 0;
+                            passedProposals = 0;
+                            totalVotingPower = 0;
+                        }
+                    };
+                }
+            };
+            case null {
+                {
+                    totalProposals = 0;
+                    activeProposals = 0;
+                    passedProposals = 0;
+                    totalVotingPower = 0;
+                }
+            };
         }
     };
 
-    // Temporary proposal creation (will delegate to proposals canister later)
     public shared(msg) func createProposal(
         daoId: DAOId,
         title: Text,
-        _description: Text,
+        description: Text,
         _proposalType: Text
     ) : async Result<Nat, Text> {
         if (not isRegisteredUser(daoId, msg.caller)) {
             return #err("Only registered users can create proposals");
         };
-        
-        // For now, return success with a dummy proposal ID
-        // Later this will delegate to the proposals canister
-        Debug.print("Proposal created: " # title);
-        #ok(1) // Return dummy proposal ID
+        switch (daoStates.get(daoId)) {
+            case (?state) {
+                switch (state.proposalsCanister) {
+                    case (?canisterId) {
+                        let proposals : actor {
+                            createProposal : shared (Principal, Text, Text, Types.ProposalType, ?Text, ?Nat) -> async Result<Nat, Text>;
+                        } = actor(Principal.toText(canisterId));
+                        let res = await proposals.createProposal(
+                            Principal.fromText(daoId),
+                            title,
+                            description,
+                            #textProposal(description),
+                            null,
+                            null
+                        );
+                        res
+                    };
+                    case null { #err("Proposals canister not configured") };
+                }
+            };
+            case null { #err("DAO not found") };
+        }
     };
 
-    // Temporary voting function (will delegate to proposals canister later)
     public shared(msg) func vote(
         daoId: DAOId,
         proposalId: Nat,
         choice: Text,
-        _reason: ?Text
+        reason: ?Text
     ) : async Result<(), Text> {
         if (not isRegisteredUser(daoId, msg.caller)) {
             return #err("Only registered users can vote");
         };
-        
-        // For now, just log the vote
-        // Later this will delegate to the proposals canister
-        Debug.print("Vote cast on proposal " # Nat.toText(proposalId) # ": " # choice);
-        #ok()
+        switch (daoStates.get(daoId)) {
+            case (?state) {
+                switch (state.proposalsCanister) {
+                    case (?canisterId) {
+                        let proposals : actor {
+                            vote : shared (Principal, Nat, Types.VoteChoice, ?Text) -> async Result<(), Text>;
+                        } = actor(Principal.toText(canisterId));
+                        let voteChoice = switch (choice) {
+                            case ("inFavor") #inFavor;
+                            case ("against") #against;
+                            case _ #abstain;
+                        };
+                        let res = await proposals.vote(
+                            Principal.fromText(daoId),
+                            proposalId,
+                            voteChoice,
+                            reason
+                        );
+                        res
+                    };
+                    case null { #err("Proposals canister not configured") };
+                }
+            };
+            case null { #err("DAO not found") };
+        }
     };
 
     // Utility functions
