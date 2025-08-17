@@ -35,7 +35,7 @@ export const idlFactory = ({ IDL }) => {
     'available' : TokenAmount,
   });
   return IDL.Service({
-    'addAuthorizedPrincipal' : IDL.Func([IDL.Principal], [Result_1], []),
+    'addAuthorizedPrincipal' : IDL.Func([Principal, IDL.Principal], [Result_1], []),
     'deposit' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result], []),
     'getAllTransactions' : IDL.Func(
         [Principal],
@@ -43,7 +43,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getAuthorizedPrincipals' : IDL.Func(
-        [],
+        [Principal],
         [IDL.Vec(IDL.Principal)],
         ['query'],
       ),
@@ -78,7 +78,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'lockTokens' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result_1], []),
     'releaseReservedTokens' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result_1], []),
-    'removeAuthorizedPrincipal' : IDL.Func([IDL.Principal], [Result_1], []),
+    'removeAuthorizedPrincipal' : IDL.Func([Principal, IDL.Principal], [Result_1], []),
     'reserveTokens' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result_1], []),
     'unlockTokens' : IDL.Func([Principal, TokenAmount, IDL.Text], [Result_1], []),
     'withdraw' : IDL.Func(
