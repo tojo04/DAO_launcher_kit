@@ -12,7 +12,6 @@ import {
   Calendar,
   DollarSign
 } from 'lucide-react';
-import { Principal } from '@dfinity/principal';
 import { DAO } from '../../types/dao';
 import { useStaking } from '../../hooks/useStaking';
 import { useActors } from '../../context/ActorContext';
@@ -62,12 +61,12 @@ const ManagementStaking: React.FC = () => {
   const fetchData = useCallback(async () => {
     if (!actors?.staking) return;
     try {
-      const principalId = principal ? Principal.fromText(principal) : undefined;
-      const daoPrincipal = Principal.fromText(dao.id);
+      const principalId = principal || undefined;
+      const daoId = dao.id;
       const [stats, stakes] = await Promise.all([
-        actors.staking.getStakingStats(daoPrincipal),
+        actors.staking.getStakingStats(daoId),
         principalId
-          ? actors.staking.getUserStakes(daoPrincipal, principalId)
+          ? actors.staking.getUserStakes(daoId, principalId)
           : Promise.resolve([])
       ]);
 
