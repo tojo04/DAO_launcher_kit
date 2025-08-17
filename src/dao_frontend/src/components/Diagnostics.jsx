@@ -2,7 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useDAOAPI } from '../utils/daoAPI';
 import { useAssets } from '../hooks/useAssets';
+
+import { useDAOManagement } from '../context/DAOManagementContext';
+
 import { useDAO } from '../context/DAOContext';
+
 import BackgroundParticles from './BackgroundParticles';
 import { Loader2 } from 'lucide-react';
 
@@ -36,7 +40,11 @@ const Diagnostics = () => {
   const { isAuthenticated, loading } = useAuth();
   const daoAPI = useDAOAPI();
   const { getHealth: getAssetsHealth } = useAssets();
+
+  const { selectedDAO } = useDAOManagement();
+
   const { activeDAO } = useDAO();
+
 
   const [references, setReferences] = useState(null);
   const [fetching, setFetching] = useState(true);
@@ -47,6 +55,7 @@ const Diagnostics = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+
       if (!daoAPI || !activeDAO) return;
 
       setFetching(true);
@@ -56,7 +65,7 @@ const Diagnostics = () => {
       setError(null);
       setHealthErrors({ backend: null, assets: null });
       try {
-        const refs = await daoAPI.getCanisterReferences(activeDAO.id);
+
         setReferences(refs);
       } catch (err) {
         console.error('Failed to fetch canister references', err);
@@ -84,7 +93,8 @@ const Diagnostics = () => {
       }
     };
     fetchData();
-  }, [daoAPI, getAssetsHealth, activeDAO]);
+
+  }, [daoAPI, getAssetsHealth, selectedDAO]);
 
   if (loading || fetching) {
     return (

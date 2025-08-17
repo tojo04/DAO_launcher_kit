@@ -589,7 +589,7 @@ const handleFeatureToggle = (moduleId, featureId) => {
  * - Detailed error reporting for debugging
  * - Graceful degradation for non-critical failures
  */
-const launchDAO = async (daoConfig) => {
+const launchDAO = async (daoId, daoConfig) => {
     setLoading(true);
     setError(null);
     
@@ -601,6 +601,7 @@ const launchDAO = async (daoConfig) => {
             .map(wallet => Principal.fromText(wallet));
             
         const initResult = await actors.daoBackend.initialize(
+            daoId,
             daoConfig.daoName,
             daoConfig.description,
             initialAdmins
@@ -612,6 +613,7 @@ const launchDAO = async (daoConfig) => {
         
         // Step 2: Set up canister references
         const canisterRefResult = await actors.daoBackend.setCanisterReferences(
+            daoId,
             governanceCanisterId,
             stakingCanisterId,
             treasuryCanisterId,

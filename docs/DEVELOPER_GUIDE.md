@@ -464,7 +464,7 @@ describe('useDAOOperations Hook', () => {
         };
         
         await act(async () => {
-            const response = await result.current.launchDAO(daoConfig);
+            const response = await result.current.launchDAO('test-dao', daoConfig);
             expect(response.success).toBe(true);
         });
     });

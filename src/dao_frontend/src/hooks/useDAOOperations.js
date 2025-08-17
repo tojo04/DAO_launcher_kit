@@ -16,9 +16,12 @@ export const useDAOOperations = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const launchDAO = async (daoConfig) => {
+    const launchDAO = async (daoId, daoConfig) => {
         if (!daoAPI) {
             throw new Error('DAO API not initialized');
+        }
+        if (!daoId) {
+            throw new Error('DAO ID is required to launch');
         }
 
         setLoading(true);
@@ -49,6 +52,7 @@ export const useDAOOperations = () => {
 
             // Step 2: Initialize the DAO with basic info
             await daoAPI.initializeDAO(
+                daoId,
                 daoConfig.daoName,
                 daoConfig.description,
                 initialAdmins
@@ -78,6 +82,7 @@ export const useDAOOperations = () => {
             }
 
             await daoAPI.setCanisterReferences(
+                daoId,
                 governanceCanisterId,
                 stakingCanisterId,
                 treasuryCanisterId,
@@ -94,7 +99,7 @@ export const useDAOOperations = () => {
                 }))
                 .filter(mf => mf.features.length > 0);
 
-            await daoAPI.setDAOConfig({
+            await daoAPI.setDAOConfig(daoId, {
                 category: daoConfig.category,
                 website: daoConfig.website,
                 selectedModules: daoConfig.selectedModules,
@@ -117,9 +122,10 @@ export const useDAOOperations = () => {
             if (creatorPrincipal) {
                 try {
                     // Check if creator is already registered
-                    const existingProfile = await daoAPI.getUserProfile(creatorPrincipal);
+                    const existingProfile = await daoAPI.getUserProfile(daoId, creatorPrincipal);
                     if (!existingProfile) {
                         await daoAPI.adminRegisterUser(
+                            daoId,
                             creatorPrincipal,
                             "DAO Creator", // Default display name
                             "DAO Creator and Administrator" // Default bio
@@ -142,9 +148,9 @@ export const useDAOOperations = () => {
                         const memberPrincipal = Principal.fromText(wallet);
                         
                         // Check if user is already registered
-                        const existingProfile = await daoAPI.getUserProfile(memberPrincipal);
+                        const existingProfile = await daoAPI.getUserProfile(daoId, memberPrincipal);
                         if (!existingProfile) {
-                            const result = await daoAPI.adminRegisterUser(memberPrincipal, name, role);
+                            const result = await daoAPI.adminRegisterUser(daoId, memberPrincipal, name, role);
                             console.log(`✅ Registered team member: ${name}`);
                             return result;
                         } else {
@@ -163,7 +169,7 @@ export const useDAOOperations = () => {
             }
 
             // Step 7: Return the DAO info
-            const daoInfo = await daoAPI.getDAOInfo();
+            const daoInfo = await daoAPI.getDAOInfo(daoId);
             
             // Refresh the DAO list in the management context
             if (fetchDAOs) {

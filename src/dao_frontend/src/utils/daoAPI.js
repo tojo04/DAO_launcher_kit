@@ -42,9 +42,18 @@ export class DAOAPIWrapper {
         }
     }
 
+    ensureDaoId(daoId) {
+        if (!daoId) {
+            const error = new Error('DAO ID is required');
+            console.error(error.message);
+            throw error;
+        }
+        return daoId;
+    }
+
     // DAO Management APIs
     async initializeDAO(daoId, name, description, initialAdmins) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.initialize(id, name, description, initialAdmins),
             'Initialize DAO'
@@ -52,7 +61,7 @@ export class DAOAPIWrapper {
     }
 
     async setCanisterReferences(daoId, governance, staking, treasury, proposals) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.setCanisterReferences(id, governance, staking, treasury, proposals),
             'Set Canister References'
@@ -60,7 +69,7 @@ export class DAOAPIWrapper {
     }
 
     async getCanisterReferences(daoId) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.getCanisterReferences(id),
             'Get Canister References'
@@ -68,7 +77,7 @@ export class DAOAPIWrapper {
     }
 
     async setDAOConfig(daoId, config) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.setDAOConfig(id, config),
             'Set DAO Configuration'
@@ -76,7 +85,7 @@ export class DAOAPIWrapper {
     }
 
     async getDAOInfo(daoId) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.getDAOInfo(id),
             'Get DAO Info'
@@ -84,7 +93,7 @@ export class DAOAPIWrapper {
     }
 
     async getDAOConfig(daoId) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.getDAOConfig(id),
             'Get DAO Configuration'
@@ -92,7 +101,7 @@ export class DAOAPIWrapper {
     }
 
     async getDAOStats(daoId) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.getDAOStats(id),
             'Get DAO Statistics'
@@ -101,7 +110,7 @@ export class DAOAPIWrapper {
 
     // User Management APIs
     async registerUser(daoId, displayName, bio) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.registerUser(id, displayName, bio),
             'Register User'
@@ -109,7 +118,7 @@ export class DAOAPIWrapper {
     }
 
     async adminRegisterUser(daoId, userPrincipal, displayName, bio) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.adminRegisterUser(id, userPrincipal, displayName, bio),
             'Admin Register User'
@@ -117,7 +126,7 @@ export class DAOAPIWrapper {
     }
 
     async updateUserProfile(daoId, displayName, bio) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.updateUserProfile(id, displayName, bio),
             'Update User Profile'
@@ -125,7 +134,7 @@ export class DAOAPIWrapper {
     }
 
     async getUserProfile(daoId, userId) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.getUserProfile(id, userId),
             'Get User Profile'
@@ -133,7 +142,7 @@ export class DAOAPIWrapper {
     }
 
     async getAllUsers(daoId) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.getAllUsers(id),
             'Get All Users'
@@ -142,7 +151,7 @@ export class DAOAPIWrapper {
 
     // Admin Management APIs
     async addAdmin(daoId, newAdmin) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.addAdmin(id, newAdmin),
             'Add Admin'
@@ -150,7 +159,7 @@ export class DAOAPIWrapper {
     }
 
     async removeAdmin(daoId, adminToRemove) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.removeAdmin(id, adminToRemove),
             'Remove Admin'
@@ -158,7 +167,7 @@ export class DAOAPIWrapper {
     }
 
     async checkIsAdmin(daoId, principal) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.checkIsAdmin(id, principal),
             'Check Is Admin'
@@ -167,7 +176,7 @@ export class DAOAPIWrapper {
 
     // Governance APIs (temporary implementations)
     async getGovernanceStats(daoId) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.getGovernanceStats(id),
             'Get Governance Statistics'
@@ -175,7 +184,7 @@ export class DAOAPIWrapper {
     }
 
     async createProposal(daoId, title, description, proposalType) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.createProposal(id, title, description, proposalType),
             'Create Proposal'
@@ -183,7 +192,7 @@ export class DAOAPIWrapper {
     }
 
     async vote(daoId, proposalId, choice, reason) {
-        const id = daoId ?? 'default';
+        const id = this.ensureDaoId(daoId);
         return this.callAPI(
             () => this.actors.daoBackend.vote(id, proposalId, choice, reason),
             'Cast Vote'

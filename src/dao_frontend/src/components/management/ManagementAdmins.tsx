@@ -42,10 +42,9 @@ const ManagementAdmins: React.FC = () => {
   const verifyAccess = async () => {
     if (!daoAPI || !principal) return;
     try {
-      const isAdmin = await daoAPI.checkIsAdmin(
-        dao.id,
-        Principal.fromText(principal)
-      );
+
+      const isAdmin = await daoAPI.checkIsAdmin(dao.id, Principal.fromText(principal));
+
       setIsAuthorized(isAdmin);
       if (isAdmin) {
         await loadAdmins();

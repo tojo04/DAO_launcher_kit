@@ -35,7 +35,12 @@ export const DAOProvider = ({ children }) => {
         return;
       }
 
-      const response = await daoBackend.getAllUsers(activeDAO?.id);
+      if (!activeDAO?.id) {
+        setUserDAOs([]);
+        setActiveDAO(null);
+        return;
+      }
+      const response = await daoBackend.getAllUsers(activeDAO.id);
       let daos = [];
 
       if (Array.isArray(response)) {
