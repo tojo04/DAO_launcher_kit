@@ -267,9 +267,8 @@ persistent actor GovernanceCanister {
             return #err("Voting period has ended");
         };
 
-        // Verify voter registration
-        let daoActor : actor { getUserProfile: shared query (Principal) -> async ?Types.UserProfile } = actor(Principal.toText(daoId));
-        let profileOpt = await daoActor.getUserProfile(caller);
+        // Verify voter registration using the DAO backend actor
+        let profileOpt = await dao.getUserProfile(daoInstance, caller);
         switch (profileOpt) {
             case null return #err("User not registered");
             case (?_) {};
