@@ -185,8 +185,24 @@ export const initializeAgents = async (
       identity
     );
 
+    let governanceCanisterId: string | undefined = canisterIds.governance;
+
+    if (!governanceCanisterId) {
+      try {
+        const references = await daoBackend.getCanisterReferences(daoId);
+        const principal = references.governance[0];
+        if (!principal) {
+          throw new Error("Governance canister principal not found");
+        }
+        governanceCanisterId = principal.toString();
+      } catch (err) {
+        console.error("Failed to retrieve governance canister ID:", err);
+        throw new Error("Unable to retrieve governance canister principal");
+      }
+    }
+
     const governance = await handleOptionalActor<GovernanceService>(
-      canisterIds.governance || daoId,
+      governanceCanisterId,
       governanceIdl,
       "GOVERNANCE",
       identity
