@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Principal } from '@dfinity/principal';
 import { useActors } from '../context/ActorContext';
 
 export const useAssets = () => {
@@ -184,7 +185,9 @@ export const useAssets = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.assets.addAuthorizedUploader(principal);
+      const res = await actors.assets.addAuthorizedUploader(
+        Principal.fromText(principal)
+      );
       if (res.err) {
         throw new Error(res.err);
       }
@@ -201,7 +204,9 @@ export const useAssets = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.assets.removeAuthorizedUploader(principal);
+      const res = await actors.assets.removeAuthorizedUploader(
+        Principal.fromText(principal)
+      );
       if (res.err) {
         throw new Error(res.err);
       }
