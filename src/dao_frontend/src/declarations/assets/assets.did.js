@@ -29,7 +29,7 @@ export const idlFactory = ({ IDL }) => {
     'tags' : IDL.Vec(IDL.Text),
   });
   return IDL.Service({
-    'addAuthorizedUploader' : IDL.Func([IDL.Principal], [Result_1], []),
+    'addAuthorizedUploader' : IDL.Func([IDL.Text, IDL.Principal], [Result_1], []),
     'batchUploadAssets' : IDL.Func(
         [
           IDL.Text,
@@ -59,7 +59,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getAuthorizedUploaders' : IDL.Func(
-        [],
+        [IDL.Text],
         [IDL.Vec(IDL.Principal)],
         ['query'],
       ),
@@ -91,7 +91,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'init' : IDL.Func([IDL.Opt(IDL.Principal), IDL.Bool], [], []),
-    'removeAuthorizedUploader' : IDL.Func([IDL.Principal], [Result_1], []),
+    'removeAuthorizedUploader' : IDL.Func([IDL.Text, IDL.Principal], [Result_1], []),
     'searchAssetsByTag' : IDL.Func(
         [IDL.Text, IDL.Text],
         [IDL.Vec(AssetMetadata)],
@@ -109,7 +109,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'updateStorageLimits' : IDL.Func(
-        [IDL.Opt(IDL.Nat), IDL.Opt(IDL.Nat)],
+        [IDL.Text, IDL.Opt(IDL.Nat), IDL.Opt(IDL.Nat)],
         [Result_1],
         [],
       ),

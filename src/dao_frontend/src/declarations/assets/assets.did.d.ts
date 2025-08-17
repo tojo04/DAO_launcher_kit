@@ -35,7 +35,7 @@ export type Result_2 = { 'ok' : Asset } |
   { 'err' : string };
 export type Time = bigint;
 export interface _SERVICE {
-  'addAuthorizedUploader' : ActorMethod<[Principal], Result_1>,
+  'addAuthorizedUploader' : ActorMethod<[string, Principal], Result_1>,
   'batchUploadAssets' : ActorMethod<
     [string, Array<[string, string, AssetData, boolean, Array<string>]>],
     Array<Result>
@@ -44,7 +44,7 @@ export interface _SERVICE {
   'getAsset' : ActorMethod<[string, AssetId], Result_2>,
   'getAssetByName' : ActorMethod<[string, string], [] | [AssetMetadata]>,
   'getAssetMetadata' : ActorMethod<[string, AssetId], [] | [AssetMetadata]>,
-  'getAuthorizedUploaders' : ActorMethod<[], Array<Principal>>,
+  'getAuthorizedUploaders' : ActorMethod<[string], Array<Principal>>,
   'getPublicAssets' : ActorMethod<[string], Array<AssetMetadata>>,
   'getStorageStats' : ActorMethod<
     [string],
@@ -63,7 +63,7 @@ export interface _SERVICE {
     { 'status' : string, 'storageUsed' : bigint, 'timestamp' : Time }
   >,
   'init' : ActorMethod<[[] | [Principal], boolean], undefined>,
-  'removeAuthorizedUploader' : ActorMethod<[Principal], Result_1>,
+  'removeAuthorizedUploader' : ActorMethod<[string, Principal], Result_1>,
   'searchAssetsByTag' : ActorMethod<[string, string], Array<AssetMetadata>>,
   'updateAssetMetadata' : ActorMethod<
     [
@@ -75,7 +75,7 @@ export interface _SERVICE {
     ],
     Result_1
   >,
-  'updateStorageLimits' : ActorMethod<[[] | [bigint], [] | [bigint]], Result_1>,
+  'updateStorageLimits' : ActorMethod<[string, [] | [bigint], [] | [bigint]], Result_1>,
   'uploadAsset' : ActorMethod<
     [string, string, string, AssetData, boolean, Array<string>],
     Result

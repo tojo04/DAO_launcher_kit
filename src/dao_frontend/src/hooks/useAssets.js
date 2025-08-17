@@ -167,11 +167,11 @@ export const useAssets = () => {
     }
   };
 
-  const getAuthorizedUploaders = async () => {
+  const getAuthorizedUploaders = async (daoId) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.assets.getAuthorizedUploaders();
+      const res = await actors.assets.getAuthorizedUploaders(daoId);
       return res.map((p) => (typeof p.toText === 'function' ? p.toText() : p));
     } catch (err) {
       setError(err.message);
@@ -181,11 +181,12 @@ export const useAssets = () => {
     }
   };
 
-  const addAuthorizedUploader = async (principal) => {
+  const addAuthorizedUploader = async (daoId, principal) => {
     setLoading(true);
     setError(null);
     try {
       const res = await actors.assets.addAuthorizedUploader(
+        daoId,
         Principal.fromText(principal)
       );
       if (res.err) {
@@ -200,11 +201,12 @@ export const useAssets = () => {
     }
   };
 
-  const removeAuthorizedUploader = async (principal) => {
+  const removeAuthorizedUploader = async (daoId, principal) => {
     setLoading(true);
     setError(null);
     try {
       const res = await actors.assets.removeAuthorizedUploader(
+        daoId,
         Principal.fromText(principal)
       );
       if (res.err) {
@@ -220,6 +222,7 @@ export const useAssets = () => {
   };
 
   const updateStorageLimits = async (
+    daoId,
     maxFileSizeNew = null,
     maxTotalStorageNew = null
   ) => {
@@ -227,6 +230,7 @@ export const useAssets = () => {
     setError(null);
     try {
       const res = await actors.assets.updateStorageLimits(
+        daoId,
         maxFileSizeNew === null ? [] : [BigInt(maxFileSizeNew)],
         maxTotalStorageNew === null ? [] : [BigInt(maxTotalStorageNew)]
       );
