@@ -583,7 +583,10 @@ persistent actor TreasuryCanister {
 
     // Administrative functions
     // Configure ledger canister
-    public shared(_msg) func setLedgerCanister(canister: Principal) : async Result<(), Text> {
+    public shared(msg) func setLedgerCanister(daoId: Principal, canister: Principal) : async Result<(), Text> {
+        if (not isAdmin(daoId, msg.caller)) {
+            return #err("Not authorized");
+        };
         ledgerCanister := ?canister;
         #ok()
     };
@@ -724,7 +727,7 @@ persistent actor TreasuryCanister {
             case null { #err("Transaction not found") };
         }
     };
-=======
+
     private func isAdmin(daoId: Principal, principal: Principal) : Bool {
         // For now, reuse the authorized principal list for admin checks
         isAuthorized(daoId, principal)
