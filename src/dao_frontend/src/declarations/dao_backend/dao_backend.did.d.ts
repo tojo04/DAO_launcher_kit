@@ -47,7 +47,7 @@ export type Time = bigint;
 export type TokenAmount = bigint;
 export type UserId = Principal;
 export interface UserProfile {
-  'daoId' : Principal,
+  'daoId' : string,
   'id' : UserId,
   'bio' : string,
   'displayName' : string,
