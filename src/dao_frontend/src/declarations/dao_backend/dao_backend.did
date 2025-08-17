@@ -63,69 +63,50 @@ record {
    website: text;
  };
 service : {
-  addAdmin: (newAdmin: principal) -> (Result);
-  adminRegisterUser: (newUser: principal, displayName: text, bio: text) ->
+  addAdmin: (daoId: text, newAdmin: principal) -> (Result);
+  adminRegisterUser: (daoId: text, newUser: principal, displayName: text, bio: text) ->
    (Result);
-  checkIsAdmin: ("principal": principal) -> (bool) query;
-  createProposal: (title: text, _description: text, _proposalType: text) ->
+  checkIsAdmin: (daoId: text, "principal": principal) -> (bool) query;
+  createProposal: (daoId: text, title: text, _description: text, _proposalType: text) ->
    (Result_1);
-  getAllUsers: () -> (vec UserProfile) query;
-  getCanisterReferences: () ->
+  getAllUsers: (daoId: text) -> (vec UserProfile) query;
+  getCanisterReferences: (daoId: text) ->
    (record {
       governance: opt principal;
       proposals: opt principal;
       staking: opt principal;
       treasury: opt principal;
     }) query;
-  getDAOConfig: () -> (opt DAOConfig) query;
-  getDAOInfo: () ->
+  getDAOConfig: (daoId: text) -> (opt DAOConfig) query;
+  getDAOInfo: (daoId: text) ->
    (record {
       description: text;
       initialized: bool;
       name: text;
       totalMembers: nat;
     }) query;
-  getDAOStats: () -> (DAOStats) query;
-  getRecentActivity: () -> (vec Activity) query;
-  getGovernanceStats: () ->
+  getDAOStats: (daoId: text) -> (DAOStats) query;
+  getRecentActivity: (daoId: text) -> (vec Activity) query;
+  getGovernanceStats: (daoId: text) ->
    (record {
       activeProposals: nat;
       passedProposals: nat;
       totalProposals: nat;
       totalVotingPower: nat;
     });
-  getUserProfile: (userId: principal) -> (opt UserProfile) query;
-  greet: (name: text) -> (text) query;
+  getUserProfile: (daoId: text, userId: principal) -> (opt UserProfile) query;
+  greet: (daoId: text, name: text) -> (text) query;
   health: () -> (record {
                    status: text;
                    timestamp: int;
                  }) query;
-  /// * Initialize the DAO with basic configuration
-  ///      * 
-  ///      * This is the first function called when setting up a new DAO.
-  ///      * It establishes the foundational parameters and admin structure.
-  ///      * 
-  ///      * @param name - Human-readable name for the DAO
-  ///      * @param description - Brief description of the DAO's purpose
-  ///      * @param initialAdmins - Array of Principal IDs who will have admin privileges
-  ///      * @returns Result indicating success or failure with error message
-  initialize: (name: text, description: text, initialAdmins:
+  initialize: (daoId: text, name: text, description: text, initialAdmins:
    vec principal) -> (Result);
-  registerUser: (displayName: text, bio: text) -> (Result);
-  removeAdmin: (adminToRemove: principal) -> (Result);
-  /// * Set references to other canisters in the DAO ecosystem
-  ///      * 
-  ///      * This establishes the microservices architecture by connecting
-  ///      * the main canister to specialized function canisters.
-  ///      * 
-  ///      * @param governance - Principal ID of the governance canister
-  ///      * @param staking - Principal ID of the staking canister  
-  ///      * @param treasury - Principal ID of the treasury canister
-  ///      * @param proposals - Principal ID of the proposals canister
-  ///      * @returns Result indicating success or failure
-  setCanisterReferences: (governance: principal, staking: principal,
+  registerUser: (daoId: text, displayName: text, bio: text) -> (Result);
+  removeAdmin: (daoId: text, adminToRemove: principal) -> (Result);
+  setCanisterReferences: (daoId: text, governance: principal, staking: principal,
    treasury: principal, proposals: principal) -> (Result);
-  setDAOConfig: (config: DAOConfig) -> (Result);
-  updateUserProfile: (displayName: text, bio: text) -> (Result);
-  vote: (proposalId: nat, choice: text, _reason: opt text) -> (Result);
+  setDAOConfig: (daoId: text, config: DAOConfig) -> (Result);
+  updateUserProfile: (daoId: text, displayName: text, bio: text) -> (Result);
+  vote: (daoId: text, proposalId: nat, choice: text, _reason: opt text) -> (Result);
 }

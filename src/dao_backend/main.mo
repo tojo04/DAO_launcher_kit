@@ -6,6 +6,7 @@ import Principal "mo:base/Principal";
 import Debug "mo:base/Debug";
 import Nat "mo:base/Nat";
 import Text "mo:base/Text";
+import Array "mo:base/Array";
 
 import Types "shared/types";
 
@@ -35,28 +36,41 @@ persistent actor DAOMain {
     type DAOStats = Types.DAOStats;
     type DAOConfig = Types.DAOConfig;
     type Activity = Types.Activity;
+    type DAOId = Types.DAOId;
 
-    // Stable storage for upgrades - persists across canister upgrades
-    // These variables maintain their state when the canister is upgraded
-    private var initialized : Bool = false;
-    private var daoName : Text = "DAO Launcher";
-    private var daoDescription : Text = "A decentralized autonomous organization for community governance";
-    private var totalMembers : Nat = 0;
-    private var userProfilesEntries : [(Principal, UserProfile)] = [];
-    private var adminPrincipalsEntries : [Principal] = [];
-    private var daoConfig : ?DAOConfig = null;
+    // Stable storage for upgrades - persisted per DAO
+    private type DAOStable = {
+        initialized: Bool;
+        name: Text;
+        description: Text;
+        totalMembers: Nat;
+        userProfilesEntries: [(Principal, UserProfile)];
+        adminPrincipalsEntries: [Principal];
+        daoConfig: ?DAOConfig;
+        governanceCanister: ?Principal;
+        stakingCanister: ?Principal;
+        treasuryCanister: ?Principal;
+        proposalsCanister: ?Principal;
+    };
+
+    private var daoStatesEntries : [(DAOId, DAOStable)] = [];
 
     // Runtime storage - recreated after upgrades from stable storage
-    // These HashMaps provide efficient O(1) lookup for user data and admin permissions
-    private transient var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
-    private transient var adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
+    private type DAOState = {
+        var initialized: Bool;
+        var daoName: Text;
+        var daoDescription: Text;
+        var totalMembers: Nat;
+        var userProfiles: HashMap.HashMap<Principal, UserProfile>;
+        var adminPrincipals: HashMap.HashMap<Principal, Bool>;
+        var daoConfig: ?DAOConfig;
+        var governanceCanister: ?Principal;
+        var stakingCanister: ?Principal;
+        var treasuryCanister: ?Principal;
+        var proposalsCanister: ?Principal;
+    };
 
-    // Canister references for modular architecture
-    // These maintain connections to other specialized canisters in the DAO ecosystem
-    private transient var governanceCanister : ?Principal = null;
-    private transient var stakingCanister : ?Principal = null;
-    private transient var treasuryCanister : ?Principal = null;
-    private transient var proposalsCanister : ?Principal = null;
+    private transient var daoStates = HashMap.HashMap<DAOId, DAOState>(10, Text.equal, Text.hash);
 
     // System functions for upgrades
     /**
@@ -64,8 +78,27 @@ persistent actor DAOMain {
      * Called automatically before canister upgrade to preserve data
      */
     system func preupgrade() {
-        userProfilesEntries := Iter.toArray(userProfiles.entries());
-        adminPrincipalsEntries := Iter.toArray(adminPrincipals.keys());
+        daoStatesEntries := Iter.toArray(
+            Iter.map<(DAOId, DAOState),(DAOId, DAOStable)>(
+                daoStates.entries(),
+                func (entry: (DAOId, DAOState)) : (DAOId, DAOStable) {
+                    let (id, state) = entry;
+                    (id, {
+                        initialized = state.initialized;
+                        name = state.daoName;
+                        description = state.daoDescription;
+                        totalMembers = state.totalMembers;
+                        userProfilesEntries = Iter.toArray(state.userProfiles.entries());
+                        adminPrincipalsEntries = Iter.toArray(state.adminPrincipals.keys());
+                        daoConfig = state.daoConfig;
+                        governanceCanister = state.governanceCanister;
+                        stakingCanister = state.stakingCanister;
+                        treasuryCanister = state.treasuryCanister;
+                        proposalsCanister = state.proposalsCanister;
+                    })
+                }
+            )
+        );
     };
 
     /**
@@ -73,52 +106,89 @@ persistent actor DAOMain {
      * Called automatically after canister upgrade to restore functionality
      */
     system func postupgrade() {
-        userProfiles := HashMap.fromIter<Principal, UserProfile>(
-            userProfilesEntries.vals(), 
-            userProfilesEntries.size(), 
-            Principal.equal, 
-            Principal.hash
-        );
-        
-        // Restore admin permissions from stable storage
-        for (admin in adminPrincipalsEntries.vals()) {
-            adminPrincipals.put(admin, true);
+        daoStates := HashMap.HashMap<DAOId, DAOState>(daoStatesEntries.size(), Text.equal, Text.hash);
+        for ((id, stableState) in daoStatesEntries.vals()) {
+            let userMap = HashMap.fromIter<Principal, UserProfile>(
+                stableState.userProfilesEntries.vals(),
+                stableState.userProfilesEntries.size(),
+                Principal.equal,
+                Principal.hash
+            );
+            let adminMap = HashMap.HashMap<Principal, Bool>(stableState.adminPrincipalsEntries.size(), Principal.equal, Principal.hash);
+            for (admin in stableState.adminPrincipalsEntries.vals()) {
+                adminMap.put(admin, true);
+            };
+            daoStates.put(id, {
+                initialized = stableState.initialized;
+                daoName = stableState.name;
+                daoDescription = stableState.description;
+                totalMembers = stableState.totalMembers;
+                userProfiles = userMap;
+                adminPrincipals = adminMap;
+                daoConfig = stableState.daoConfig;
+                governanceCanister = stableState.governanceCanister;
+                stakingCanister = stableState.stakingCanister;
+                treasuryCanister = stableState.treasuryCanister;
+                proposalsCanister = stableState.proposalsCanister;
+            });
         };
+    };
+
+    private func ensureDAO(daoId: DAOId) : DAOState {
+        switch (daoStates.get(daoId)) {
+            case (?state) state;
+            case null {
+                let newState : DAOState = {
+                    initialized = false;
+                    daoName = "";
+                    daoDescription = "";
+                    totalMembers = 0;
+                    userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
+                    adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
+                    daoConfig = null;
+                    governanceCanister = null;
+                    stakingCanister = null;
+                    treasuryCanister = null;
+                    proposalsCanister = null;
+                };
+                daoStates.put(daoId, newState);
+                newState
+            };
+        }
     };
 
     /**
      * Initialize the DAO with basic configuration
-     * 
+     *
      * This is the first function called when setting up a new DAO.
      * It establishes the foundational parameters and admin structure.
-     * 
+     *
+     * @param daoId - Unique identifier for the DAO
      * @param name - Human-readable name for the DAO
      * @param description - Brief description of the DAO's purpose
      * @param initialAdmins - Array of Principal IDs who will have admin privileges
      * @returns Result indicating success or failure with error message
      */
     public shared(msg) func initialize(
+        daoId: DAOId,
         name: Text,
         description: Text,
         initialAdmins: [Principal]
     ) : async Result<(), Text> {
-        // Prevent double initialization
-        if (initialized) {
+        let state = ensureDAO(daoId);
+        if (state.initialized) {
             return #err("DAO already initialized");
         };
 
-        daoName := name;
-        daoDescription := description;
-        
-        // Set initial admins - these users can manage DAO configuration
+        state.daoName := name;
+        state.daoDescription := description;
+
         for (admin in initialAdmins.vals()) {
-            adminPrincipals.put(admin, true);
+            state.adminPrincipals.put(admin, true);
         };
+        state.adminPrincipals.put(msg.caller, true);
 
-        // Always add the deployer as an admin for initial setup
-        adminPrincipals.put(msg.caller, true);
-
-        initialized := true;
+        state.initialized := true;
         Debug.print("DAO initialized: " # name);
         #ok()
     };
@@ -136,40 +206,43 @@ persistent actor DAOMain {
      * @returns Result indicating success or failure
      */
     public shared(msg) func setCanisterReferences(
+        daoId: DAOId,
         governance: Principal,
         staking: Principal,
         treasury: Principal,
         proposals: Principal
     ) : async Result<(), Text> {
-        // Only admins can modify the canister architecture
-        if (not isAdmin(msg.caller)) {
+        if (not isAdmin(daoId, msg.caller)) {
             return #err("Only admins can set canister references");
         };
 
-        governanceCanister := ?governance;
-        stakingCanister := ?staking;
-        treasuryCanister := ?treasury;
-        proposalsCanister := ?proposals;
+        let state = ensureDAO(daoId);
+        state.governanceCanister := ?governance;
+        state.stakingCanister := ?staking;
+        state.treasuryCanister := ?treasury;
+        state.proposalsCanister := ?proposals;
 
         Debug.print("Canister references set successfully");
         #ok()
     };
 
     // DAO configuration
-    public shared(msg) func setDAOConfig(config: DAOConfig) : async Result<(), Text> {
-        if (not isAdmin(msg.caller)) {
+    public shared(msg) func setDAOConfig(daoId: DAOId, config: DAOConfig) : async Result<(), Text> {
+        if (not isAdmin(daoId, msg.caller)) {
             return #err("Only admins can set DAO configuration");
         };
-        daoConfig := ?config;
+        let state = ensureDAO(daoId);
+        state.daoConfig := ?config;
         Debug.print("DAO configuration saved");
         #ok()
     };
 
     // User management
-    public shared(msg) func registerUser(displayName: Text, bio: Text) : async Result<(), Text> {
+    public shared(msg) func registerUser(daoId: DAOId, displayName: Text, bio: Text) : async Result<(), Text> {
         let caller = msg.caller;
-        
-        switch (userProfiles.get(caller)) {
+        let state = ensureDAO(daoId);
+
+        switch (state.userProfiles.get(caller)) {
             case (?_) return #err("User already registered");
             case null {};
         };
@@ -184,19 +257,21 @@ persistent actor DAOMain {
             votingPower = 0;
         };
 
-        userProfiles.put(caller, userProfile);
-        totalMembers += 1;
+        state.userProfiles.put(caller, userProfile);
+        state.totalMembers += 1;
 
         Debug.print("User registered: " # displayName);
         #ok()
     };
 
-    public shared(msg) func adminRegisterUser(newUser: Principal, displayName: Text, bio: Text) : async Result<(), Text> {
-        if (not isAdmin(msg.caller)) {
+    public shared(msg) func adminRegisterUser(daoId: DAOId, newUser: Principal, displayName: Text, bio: Text) : async Result<(), Text> {
+        if (not isAdmin(daoId, msg.caller)) {
             return #err("Only admins can register users");
         };
 
-        switch (userProfiles.get(newUser)) {
+        let state = ensureDAO(daoId);
+
+        switch (state.userProfiles.get(newUser)) {
             case (?_) return #err("User already registered");
             case null {};
         };
@@ -211,17 +286,18 @@ persistent actor DAOMain {
             votingPower = 0;
         };
 
-        userProfiles.put(newUser, userProfile);
-        totalMembers += 1;
+        state.userProfiles.put(newUser, userProfile);
+        state.totalMembers += 1;
 
         Debug.print("User registered by admin: " # displayName);
         #ok()
     };
 
-    public shared(msg) func updateUserProfile(displayName: Text, bio: Text) : async Result<(), Text> {
+    public shared(msg) func updateUserProfile(daoId: DAOId, displayName: Text, bio: Text) : async Result<(), Text> {
         let caller = msg.caller;
-        
-        switch (userProfiles.get(caller)) {
+        let state = ensureDAO(daoId);
+
+        switch (state.userProfiles.get(caller)) {
             case null return #err("User not found");
             case (?profile) {
                 let updatedProfile = {
@@ -233,61 +309,108 @@ persistent actor DAOMain {
                     totalStaked = profile.totalStaked;
                     votingPower = profile.votingPower;
                 };
-                userProfiles.put(caller, updatedProfile);
+                state.userProfiles.put(caller, updatedProfile);
                 #ok()
             };
         };
     };
 
     // Query functions
-    public query func getDAOInfo() : async {
+    public query func getDAOInfo(daoId: DAOId) : async {
         name: Text;
         description: Text;
         totalMembers: Nat;
         initialized: Bool;
     } {
-        {
-            name = daoName;
-            description = daoDescription;
-            totalMembers = totalMembers;
-            initialized = initialized;
+        switch (daoStates.get(daoId)) {
+            case (?state) {
+                {
+                    name = state.daoName;
+                    description = state.daoDescription;
+                    totalMembers = state.totalMembers;
+                    initialized = state.initialized;
+                }
+            };
+            case null {
+                {
+                    name = "";
+                    description = "";
+                    totalMembers = 0;
+                    initialized = false;
+                }
+            }
         }
     };
 
-    public query func getDAOConfig() : async ?DAOConfig {
-        daoConfig
+    public query func getDAOConfig(daoId: DAOId) : async ?DAOConfig {
+        switch (daoStates.get(daoId)) {
+            case (?state) state.daoConfig;
+            case null null;
+        }
     };
 
-    public query func getUserProfile(userId: Principal) : async ?UserProfile {
-        userProfiles.get(userId)
+    public query func getUserProfile(daoId: DAOId, userId: Principal) : async ?UserProfile {
+        switch (daoStates.get(daoId)) {
+            case (?state) state.userProfiles.get(userId);
+            case null null;
+        }
     };
 
-    public query func getAllUsers() : async [UserProfile] {
-        Iter.toArray(userProfiles.vals())
+    public query func getAllUsers(daoId: DAOId) : async [UserProfile] {
+        switch (daoStates.get(daoId)) {
+            case (?state) Iter.toArray(state.userProfiles.vals());
+            case null [];
+        }
     };
 
-    public query func getCanisterReferences() : async {
+    public query func getCanisterReferences(daoId: DAOId) : async {
         governance: ?Principal;
         staking: ?Principal;
         treasury: ?Principal;
         proposals: ?Principal;
     } {
-        {
-            governance = governanceCanister;
-            staking = stakingCanister;
-            treasury = treasuryCanister;
-            proposals = proposalsCanister;
+        switch (daoStates.get(daoId)) {
+            case (?state) {
+                {
+                    governance = state.governanceCanister;
+                    staking = state.stakingCanister;
+                    treasury = state.treasuryCanister;
+                    proposals = state.proposalsCanister;
+                }
+            };
+            case null {
+                {
+                    governance = null;
+                    staking = null;
+                    treasury = null;
+                    proposals = null;
+                }
+            }
         }
     };
 
-    public query func getDAOStats() : async DAOStats {
-        {
-            totalMembers = totalMembers;
-            totalProposals = 0; // Will be fetched from governance canister
-            activeProposals = 0; // Will be fetched from governance canister
-            totalStaked = 0; // Will be fetched from staking canister
-            treasuryBalance = 0; // Will be fetched from treasury canister
-            totalVotingPower = 0; // Will be calculated from staking data
+    public query func getDAOStats(daoId: DAOId) : async DAOStats {
+        switch (daoStates.get(daoId)) {
+            case (?state) {
+                {
+                    totalMembers = state.totalMembers;
+                    totalProposals = 0;
+                    activeProposals = 0;
+                    totalStaked = 0;
+                    treasuryBalance = 0;
+                    totalVotingPower = 0;
+                }
+            };
+            case null {
+                {
+                    totalMembers = 0;
+                    totalProposals = 0;
+                    activeProposals = 0;
+                    totalStaked = 0;
+                    treasuryBalance = 0;
+                    totalVotingPower = 0;
+                }
+            }
         }
     };
 
@@ -316,11 +439,12 @@ persistent actor DAOMain {
 
     // Temporary proposal creation (will delegate to proposals canister later)
     public shared(msg) func createProposal(
+        daoId: DAOId,
         title: Text,
         _description: Text,
         _proposalType: Text
     ) : async Result<Nat, Text> {
-        if (not isRegisteredUser(msg.caller)) {
+        if (not isRegisteredUser(daoId, msg.caller)) {
             return #err("Only registered users can create proposals");
         };
         
@@ -332,11 +456,12 @@ persistent actor DAOMain {
 
     // Temporary voting function (will delegate to proposals canister later)
     public shared(msg) func vote(
+        daoId: DAOId,
         proposalId: Nat,
         choice: Text,
         _reason: ?Text
     ) : async Result<(), Text> {
-        if (not isRegisteredUser(msg.caller)) {
+        if (not isRegisteredUser(daoId, msg.caller)) {
             return #err("Only registered users can vote");
         };
         
@@ -347,37 +472,48 @@ persistent actor DAOMain {
     };
 
     // Utility functions
-    private func isAdmin(principal: Principal) : Bool {
-        switch (adminPrincipals.get(principal)) {
-            case (?_) true;
+    private func isAdmin(daoId: DAOId, principal: Principal) : Bool {
+        switch (daoStates.get(daoId)) {
+            case (?state) {
+                switch (state.adminPrincipals.get(principal)) {
+                    case (?_) true;
+                    case null false;
+                }
+            };
             case null false;
         }
     };
 
-    private func isRegisteredUser(principal: Principal) : Bool {
-        switch (userProfiles.get(principal)) {
-            case (?_) true;
+    private func isRegisteredUser(daoId: DAOId, principal: Principal) : Bool {
+        switch (daoStates.get(daoId)) {
+            case (?state) {
+                switch (state.userProfiles.get(principal)) {
+                    case (?_) true;
+                    case null false;
+                }
+            };
             case null false;
         }
     };
 
-    public query func checkIsAdmin(principal: Principal) : async Bool {
-        isAdmin(principal)
+    public query func checkIsAdmin(daoId: DAOId, principal: Principal) : async Bool {
+        isAdmin(daoId, principal)
     };
 
     // Admin functions
-    public shared(msg) func addAdmin(newAdmin: Principal) : async Result<(), Text> {
-        if (not isAdmin(msg.caller)) {
+    public shared(msg) func addAdmin(daoId: DAOId, newAdmin: Principal) : async Result<(), Text> {
+        if (not isAdmin(daoId, msg.caller)) {
             return #err("Only admins can add other admins");
         };
 
-        adminPrincipals.put(newAdmin, true);
+        let state = ensureDAO(daoId);
+        state.adminPrincipals.put(newAdmin, true);
         Debug.print("New admin added: " # Principal.toText(newAdmin));
         #ok()
     };
 
-    public shared(msg) func removeAdmin(adminToRemove: Principal) : async Result<(), Text> {
-        if (not isAdmin(msg.caller)) {
+    public shared(msg) func removeAdmin(daoId: DAOId, adminToRemove: Principal) : async Result<(), Text> {
+        if (not isAdmin(daoId, msg.caller)) {
             return #err("Only admins can remove other admins");
         };
 
@@ -385,7 +521,8 @@ persistent actor DAOMain {
             return #err("Cannot remove yourself as admin");
         };
 
-        adminPrincipals.delete(adminToRemove);
+        let state = ensureDAO(daoId);
+        state.adminPrincipals.delete(adminToRemove);
         Debug.print("Admin removed: " # Principal.toText(adminToRemove));
         #ok()
     };
@@ -399,7 +536,11 @@ persistent actor DAOMain {
     };
 
     // Greet function (keeping for compatibility)
-    public query func greet(name : Text) : async Text {
+    public query func greet(daoId: DAOId, name : Text) : async Text {
+        let daoName = switch (daoStates.get(daoId)) {
+            case (?state) state.daoName;
+            case null "DAO";
+        };
         return "Hello, " # name # "! Welcome to " # daoName;
     };
 };
