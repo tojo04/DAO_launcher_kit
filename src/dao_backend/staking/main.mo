@@ -51,6 +51,7 @@ persistent actor StakingCanister {
     private var nextStakeId : Nat = 1;
     private var stakesEntries : [((Principal, StakeId), Stake)] = [];
     private var userStakesEntries : [(Principal, [(Principal, [StakeId])])] = [];
+    private var adminPrincipalsEntries : [(Principal, [Principal])] = [];
     private var totalStakedAmount : TokenAmount = 0;
     private var totalRewardsDistributed : TokenAmount = 0;
 
@@ -81,6 +82,7 @@ persistent actor StakingCanister {
                 (user, Iter.toArray(daoMap.entries()))
             })
         );
+        adminPrincipalsEntries := Iter.toArray(adminPrincipals.entries());
     };
 
     system func postupgrade() {
@@ -100,6 +102,12 @@ persistent actor StakingCanister {
             );
             userStakes.put(user, daoMap);
         };
+        adminPrincipals := HashMap.fromIter<Principal, [Principal]>(
+            adminPrincipalsEntries.vals(),
+            adminPrincipalsEntries.size(),
+            Principal.equal,
+            Principal.hash
+        );
     };
 
     // Public functions
@@ -512,6 +520,20 @@ persistent actor StakingCanister {
             return #err("Not authorized");
         };
         maximumStakeAmount := amount;
+        #ok()
+    };
+
+    // Set or update admin principals for a DAO
+    public shared(msg) func setAdminPrincipals(daoId: Principal, admins: [Principal]) : async Result<(), Text> {
+        switch (adminPrincipals.get(daoId)) {
+            case (?existing) {
+                if (Array.find<Principal>(existing, func(p) = p == msg.caller) == null) {
+                    return #err("Not authorized");
+                };
+            };
+            case null {};
+        };
+        adminPrincipals.put(daoId, admins);
         #ok()
     };
 
