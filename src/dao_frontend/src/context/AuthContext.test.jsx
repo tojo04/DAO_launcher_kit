@@ -80,7 +80,11 @@ describe('AuthContext', () => {
     });
 
     await waitFor(() => {
-      expect(initializeAgents).toHaveBeenCalledWith(mockDAO.canisterIds, mockIdentity);
+      expect(initializeAgents).toHaveBeenCalledWith(
+        mockDAO.canisterIds,
+        mockDAO.id,
+        mockIdentity
+      );
     });
   });
 });

@@ -40,6 +40,7 @@ export const ActorProvider = ({ children }: ActorProviderProps) => {
           }
           const initializedActors = await initializeAgents(
             selectedDAO.canisterIds,
+            selectedDAO.id,
             identity
           );
           setActors(initializedActors);
