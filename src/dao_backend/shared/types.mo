@@ -10,10 +10,14 @@ module {
     public type Time = Time.Time;
     public type Principal = Principal.Principal;
 
+    // Identifier used for addressing individual DAOs
+    public type DAOId = Text;
+
     // User and Identity types
     public type UserId = Principal;
     
     public type UserProfile = {
+        daoId: Principal;
         id: UserId;
         displayName: Text;
         bio: Text;
@@ -97,6 +101,7 @@ module {
     };
 
     public type Proposal = {
+        daoId: Principal;
         id: ProposalId;
         proposer: Principal;
         title: Text;
@@ -117,6 +122,7 @@ module {
     public type VoteChoice = { #inFavor; #against; #abstain };
     
     public type Vote = {
+        daoId: Principal;
         voter: Principal;
         proposalId: ProposalId;
         choice: VoteChoice;
@@ -137,6 +143,7 @@ module {
     };
 
     public type Stake = {
+        daoId: Principal;
         id: StakeId;
         staker: Principal;
         amount: TokenAmount;
@@ -163,8 +170,10 @@ module {
     };
 
     public type TreasuryTransaction = {
+
         id: Nat;
         daoId: Principal;
+
         transactionType: TreasuryTransactionType;
         amount: TokenAmount;
         from: ?Principal;

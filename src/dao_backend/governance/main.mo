@@ -45,8 +45,8 @@ persistent actor GovernanceCanister {
     // Inter-canister communication setup
     // These actor references enable cross-canister calls for governance functionality
     var dao : actor {
-        getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
-        checkIsAdmin: shared query (Principal) -> async Bool;
+        getUserProfile: shared query (Types.DAOId, Principal) -> async ?Types.UserProfile;
+        checkIsAdmin: shared query (Types.DAOId, Principal) -> async Bool;
     } = actor("aaaaa-aa");
 
     var staking : actor {
@@ -66,6 +66,7 @@ persistent actor GovernanceCanister {
     private var configEntries : [(Text, GovernanceConfig)] = [];
     private var daoId : Principal = Principal.fromText("aaaaa-aa");
     private var stakingId : Principal = Principal.fromText("aaaaa-aa");
+    private var daoInstance : Types.DAOId = "";
     private var initialized : Bool = false;
 
     // Runtime storage - rebuilt from stable storage after upgrades
@@ -74,7 +75,7 @@ persistent actor GovernanceCanister {
     private transient var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
     private transient var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
 
-    public shared(msg) func init(newDaoId: Principal, newStakingId: Principal) : async () {
+    public shared(msg) func init(newDaoId: Principal, newStakingId: Principal, daoInstanceId: Types.DAOId) : async () {
         if (initialized) {
             Debug.print("Initialization already completed");
             throw Error.reject("Governance canister already initialized");
@@ -84,10 +85,10 @@ persistent actor GovernanceCanister {
         let caller = msg.caller;
         let self = Principal.fromActor(GovernanceCanister);
         let daoTemp : actor {
-            getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
-            checkIsAdmin: shared query (Principal) -> async Bool;
+            getUserProfile: shared query (Types.DAOId, Principal) -> async ?Types.UserProfile;
+            checkIsAdmin: shared query (Types.DAOId, Principal) -> async Bool;
         } = actor(Principal.toText(newDaoId));
-        let isAdmin = await daoTemp.checkIsAdmin(caller);
+        let isAdmin = await daoTemp.checkIsAdmin(daoInstanceId, caller);
         if (caller != self and not isAdmin) {
             Debug.print("Unauthorized init attempt by " # Principal.toText(caller));
             throw Error.reject("Caller is not authorized to initialize");
@@ -95,6 +96,7 @@ persistent actor GovernanceCanister {
 
         daoId := newDaoId;
         stakingId := newStakingId;
+        daoInstance := daoInstanceId;
         dao := daoTemp;
         staking := actor(Principal.toText(newStakingId));
         initialized := true;
@@ -157,6 +159,7 @@ persistent actor GovernanceCanister {
 
     // Create a new proposal
     public shared(msg) func createProposal(
+        daoId: Principal,
         title: Text,
         description: Text,
         proposalType: Types.ProposalType,
@@ -184,6 +187,7 @@ persistent actor GovernanceCanister {
         };
 
         let proposal : Proposal = {
+            daoId = daoId;
             id = proposalId;
             proposer = caller;
             title = title;
@@ -206,6 +210,7 @@ persistent actor GovernanceCanister {
 
     // Cast a vote on a proposal
     public shared(msg) func vote(
+        daoId: Principal,
         proposalId: ProposalId,
         choice: Types.VoteChoice,
         reason: ?Text
@@ -235,7 +240,7 @@ persistent actor GovernanceCanister {
         };
 
         // Verify voter registration
-        let profileOpt = await dao.getUserProfile(caller);
+        let profileOpt = await dao.getUserProfile(daoInstance, caller);
         switch (profileOpt) {
             case null return #err("User not registered");
             case (?_) {};
@@ -250,6 +255,7 @@ persistent actor GovernanceCanister {
 
         // Create vote record
         let vote : Vote = {
+            daoId = daoId;
             voter = caller;
             proposalId = proposalId;
             choice = choice;
@@ -264,6 +270,7 @@ persistent actor GovernanceCanister {
         let updatedProposal = switch (choice) {
             case (#inFavor) {
                 {
+                    daoId = proposal.daoId;
                     id = proposal.id;
                     proposer = proposal.proposer;
                     title = proposal.title;
@@ -282,6 +289,7 @@ persistent actor GovernanceCanister {
             };
             case (#against) {
                 {
+                    daoId = proposal.daoId;
                     id = proposal.id;
                     proposer = proposal.proposer;
                     title = proposal.title;
@@ -300,6 +308,7 @@ persistent actor GovernanceCanister {
             };
             case (#abstain) {
                 {
+                    daoId = proposal.daoId;
                     id = proposal.id;
                     proposer = proposal.proposer;
                     title = proposal.title;
@@ -341,6 +350,7 @@ persistent actor GovernanceCanister {
         // Check quorum
         if (proposal.totalVotingPower < proposal.quorumThreshold) {
             let failedProposal = {
+                daoId = proposal.daoId;
                 id = proposal.id;
                 proposer = proposal.proposer;
                 title = proposal.title;
@@ -372,6 +382,7 @@ persistent actor GovernanceCanister {
         };
 
         let updatedProposal = {
+            daoId = proposal.daoId;
             id = proposal.id;
             proposer = proposal.proposer;
             title = proposal.title;
@@ -393,6 +404,7 @@ persistent actor GovernanceCanister {
             // Here you would implement the actual execution logic
             // For now, we just mark it as executed
             let executedProposal = {
+                daoId = updatedProposal.daoId;
                 id = updatedProposal.id;
                 proposer = updatedProposal.proposer;
                 title = updatedProposal.title;

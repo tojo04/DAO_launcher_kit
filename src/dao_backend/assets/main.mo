@@ -17,10 +17,17 @@ persistent actor AssetCanister {
 
     // Asset types
     public type AssetId = Nat;
+    public type DaoId = Nat;
     public type AssetData = Blob;
-    
+
+    public type AssetKey = {
+        daoId: DaoId;
+        assetId: AssetId;
+    };
+
     public type Asset = {
         id: AssetId;
+        daoId: DaoId;
         name: Text;
         contentType: Text;
         size: Nat;
@@ -33,6 +40,7 @@ persistent actor AssetCanister {
 
     public type AssetMetadata = {
         id: AssetId;
+        daoId: DaoId;
         name: Text;
         contentType: Text;
         size: Nat;
@@ -53,7 +61,7 @@ persistent actor AssetCanister {
 
     // Stable storage for upgrades
     private var nextAssetId : Nat = 1;
-    private var assetsEntries : [(AssetId, Asset)] = [];
+    private var assetsEntries : [(AssetKey, Asset)] = [];
     private var authorizedUploaders : [Principal] = [];
     private var maxFileSize : Nat = 10_000_000; // 10MB default
     private var maxTotalStorage : Nat = 1_000_000_000; // 1GB default
@@ -61,8 +69,29 @@ persistent actor AssetCanister {
     private var allowOpenUploads : Bool = false; // permit uploads with empty authorizedUploaders
 
     // Runtime storage
-    private transient var assets = HashMap.HashMap<AssetId, Asset>(100, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
-    private transient var uploaderAssets = HashMap.HashMap<Principal, [AssetId]>(50, Principal.equal, Principal.hash);
+    private func assetKeyEqual(a: AssetKey, b: AssetKey) : Bool {
+        a.daoId == b.daoId and a.assetId == b.assetId
+    };
+
+    private func assetKeyHash(k: AssetKey) : Nat32 {
+        Nat32.fromNat(k.daoId * 1_000_003 + k.assetId)
+    };
+
+    private type UploaderKey = {
+        daoId: DaoId;
+        uploader: Principal;
+    };
+
+    private func uploaderKeyEqual(a: UploaderKey, b: UploaderKey) : Bool {
+        a.daoId == b.daoId and a.uploader == b.uploader
+    };
+
+    private func uploaderKeyHash(k: UploaderKey) : Nat32 {
+        Nat32.xor(Nat32.fromNat(k.daoId), Principal.hash(k.uploader))
+    };
+
+    private transient var assets = HashMap.HashMap<AssetKey, Asset>(100, assetKeyEqual, assetKeyHash);
+    private transient var uploaderAssets = HashMap.HashMap<UploaderKey, [AssetId]>(50, uploaderKeyEqual, uploaderKeyHash);
 
     // Supported content types
     private transient let supportedTypes = [
@@ -94,21 +123,22 @@ persistent actor AssetCanister {
     };
 
     system func postupgrade() {
-        assets := HashMap.fromIter<AssetId, Asset>(
-            assetsEntries.vals(), 
-            assetsEntries.size(), 
-            Nat.equal, 
-            func(n: Nat) : Nat32 { Nat32.fromNat(n) }
+        assets := HashMap.fromIter<AssetKey, Asset>(
+            assetsEntries.vals(),
+            assetsEntries.size(),
+            assetKeyEqual,
+            assetKeyHash
         );
-        
+
         // Rebuild uploader assets mapping
-        for ((assetId, asset) in assets.entries()) {
-            let currentAssets = switch (uploaderAssets.get(asset.uploadedBy)) {
+        for ((key, asset) in assets.entries()) {
+            let uKey : UploaderKey = { daoId = key.daoId; uploader = asset.uploadedBy };
+            let currentAssets = switch (uploaderAssets.get(uKey)) {
                 case (?assets) assets;
                 case null [];
             };
-            let updatedAssets = Array.append<AssetId>(currentAssets, [assetId]);
-            uploaderAssets.put(asset.uploadedBy, updatedAssets);
+            let updatedAssets = Array.append<AssetId>(currentAssets, [key.assetId]);
+            uploaderAssets.put(uKey, updatedAssets);
         };
     };
 
@@ -118,6 +148,7 @@ persistent actor AssetCanister {
     // If no uploaders have been authorized, the upload will be rejected unless
     // `allowOpenUploads` was set to true during deployment.
     public shared(msg) func uploadAsset(
+        daoId: DaoId,
         name: Text,
         contentType: Text,
         data: AssetData,
@@ -160,8 +191,10 @@ persistent actor AssetCanister {
         let assetId = nextAssetId;
         nextAssetId += 1;
 
+        let key : AssetKey = { daoId = daoId; assetId = assetId };
         let asset : Asset = {
             id = assetId;
+            daoId = daoId;
             name = name;
             contentType = contentType;
             size = dataSize;
@@ -172,26 +205,28 @@ persistent actor AssetCanister {
             tags = tags;
         };
 
-        assets.put(assetId, asset);
+        assets.put(key, asset);
         currentStorageUsed += dataSize;
 
         // Update uploader assets mapping
-        let currentAssets = switch (uploaderAssets.get(caller)) {
+        let uKey : UploaderKey = { daoId = daoId; uploader = caller };
+        let currentAssets = switch (uploaderAssets.get(uKey)) {
             case (?assets) assets;
             case null [];
         };
         let updatedAssets = Array.append<AssetId>(currentAssets, [assetId]);
-        uploaderAssets.put(caller, updatedAssets);
+        uploaderAssets.put(uKey, updatedAssets);
 
         Debug.print("Asset uploaded: " # name # " (ID: " # Nat.toText(assetId) # ")");
         #ok(assetId)
     };
 
     // Get asset data
-    public shared(msg) func getAsset(assetId: AssetId) : async Result<Asset, Text> {
+    public shared(msg) func getAsset(daoId: DaoId, assetId: AssetId) : async Result<Asset, Text> {
         let caller = msg.caller;
-        
-        switch (assets.get(assetId)) {
+        let key : AssetKey = { daoId = daoId; assetId = assetId };
+
+        switch (assets.get(key)) {
             case (?asset) {
                 // Check access permissions
                 if (asset.isPublic or asset.uploadedBy == caller or isAuthorized(caller)) {
@@ -205,11 +240,13 @@ persistent actor AssetCanister {
     };
 
     // Get asset metadata only (without data)
-    public query func getAssetMetadata(assetId: AssetId) : async ?AssetMetadata {
-        switch (assets.get(assetId)) {
+    public query func getAssetMetadata(daoId: DaoId, assetId: AssetId) : async ?AssetMetadata {
+        let key : AssetKey = { daoId = daoId; assetId = assetId };
+        switch (assets.get(key)) {
             case (?asset) {
                 ?{
                     id = asset.id;
+                    daoId = asset.daoId;
                     name = asset.name;
                     contentType = asset.contentType;
                     size = asset.size;
@@ -224,12 +261,13 @@ persistent actor AssetCanister {
     };
 
     // Get public assets
-    public query func getPublicAssets() : async [AssetMetadata] {
+    public query func getPublicAssets(daoId: DaoId) : async [AssetMetadata] {
         let publicAssets = Buffer.Buffer<AssetMetadata>(0);
-        for (asset in assets.vals()) {
-            if (asset.isPublic) {
+        for ((key, asset) in assets.entries()) {
+            if (key.daoId == daoId and asset.isPublic) {
                 publicAssets.add({
                     id = asset.id;
+                    daoId = asset.daoId;
                     name = asset.name;
                     contentType = asset.contentType;
                     size = asset.size;
@@ -244,19 +282,22 @@ persistent actor AssetCanister {
     };
 
     // Get user's assets
-    public shared(msg) func getUserAssets() : async [AssetMetadata] {
+    public shared(msg) func getUserAssets(daoId: DaoId) : async [AssetMetadata] {
         let caller = msg.caller;
-        let userAssetIds = switch (uploaderAssets.get(caller)) {
+        let uKey : UploaderKey = { daoId = daoId; uploader = caller };
+        let userAssetIds = switch (uploaderAssets.get(uKey)) {
             case (?ids) ids;
             case null return [];
         };
 
         let userAssets = Buffer.Buffer<AssetMetadata>(0);
         for (assetId in userAssetIds.vals()) {
-            switch (assets.get(assetId)) {
+            let key : AssetKey = { daoId = daoId; assetId = assetId };
+            switch (assets.get(key)) {
                 case (?asset) {
                     userAssets.add({
                         id = asset.id;
+                        daoId = asset.daoId;
                         name = asset.name;
                         contentType = asset.contentType;
                         size = asset.size;
@@ -273,14 +314,15 @@ persistent actor AssetCanister {
     };
 
     // Search assets by tags
-    public query func searchAssetsByTag(tag: Text) : async [AssetMetadata] {
+    public query func searchAssetsByTag(daoId: DaoId, tag: Text) : async [AssetMetadata] {
         let matchingAssets = Buffer.Buffer<AssetMetadata>(0);
-        for (asset in assets.vals()) {
-            if (asset.isPublic) {
+        for ((key, asset) in assets.entries()) {
+            if (key.daoId == daoId and asset.isPublic) {
                 let hasTag = Array.find<Text>(asset.tags, func(t) = t == tag);
                 if (hasTag != null) {
                     matchingAssets.add({
                         id = asset.id;
+                        daoId = asset.daoId;
                         name = asset.name;
                         contentType = asset.contentType;
                         size = asset.size;
@@ -296,24 +338,26 @@ persistent actor AssetCanister {
     };
 
     // Delete asset
-    public shared(msg) func deleteAsset(assetId: AssetId) : async Result<(), Text> {
+    public shared(msg) func deleteAsset(daoId: DaoId, assetId: AssetId) : async Result<(), Text> {
         let caller = msg.caller;
-        
-        switch (assets.get(assetId)) {
+        let key : AssetKey = { daoId = daoId; assetId = assetId };
+
+        switch (assets.get(key)) {
             case (?asset) {
                 // Check if user owns the asset or is authorized
                 if (asset.uploadedBy == caller or isAuthorized(caller)) {
-                    assets.delete(assetId);
+                    assets.delete(key);
                     currentStorageUsed -= asset.size;
-                    
+
                     // Update uploader assets mapping
-                    let currentAssets = switch (uploaderAssets.get(asset.uploadedBy)) {
+                    let uKey : UploaderKey = { daoId = daoId; uploader = asset.uploadedBy };
+                    let currentAssets = switch (uploaderAssets.get(uKey)) {
                         case (?assets) assets;
                         case null [];
                     };
                     let updatedAssets = Array.filter<AssetId>(currentAssets, func(id) = id != assetId);
-                    uploaderAssets.put(asset.uploadedBy, updatedAssets);
-                    
+                    uploaderAssets.put(uKey, updatedAssets);
+
                     Debug.print("Asset deleted: " # asset.name # " (ID: " # Nat.toText(assetId) # ")");
                     #ok()
                 } else {
@@ -326,18 +370,21 @@ persistent actor AssetCanister {
 
     // Update asset metadata
     public shared(msg) func updateAssetMetadata(
+        daoId: DaoId,
         assetId: AssetId,
         name: ?Text,
         isPublic: ?Bool,
         tags: ?[Text]
     ) : async Result<(), Text> {
         let caller = msg.caller;
-        
-        switch (assets.get(assetId)) {
+        let key : AssetKey = { daoId = daoId; assetId = assetId };
+
+        switch (assets.get(key)) {
             case (?asset) {
                 if (asset.uploadedBy == caller or isAuthorized(caller)) {
                     let updatedAsset = {
                         id = asset.id;
+                        daoId = asset.daoId;
                         name = switch (name) { case (?n) n; case null asset.name };
                         contentType = asset.contentType;
                         size = asset.size;
@@ -347,7 +394,7 @@ persistent actor AssetCanister {
                         isPublic = switch (isPublic) { case (?p) p; case null asset.isPublic };
                         tags = switch (tags) { case (?t) t; case null asset.tags };
                     };
-                    assets.put(assetId, updatedAsset);
+                    assets.put(key, updatedAsset);
                     #ok()
                 } else {
                     #err("Not authorized to update this asset")
@@ -358,21 +405,28 @@ persistent actor AssetCanister {
     };
 
     // Get storage statistics
-    public query func getStorageStats() : async {
+    public query func getStorageStats(daoId: DaoId) : async {
         totalAssets: Nat;
         storageUsed: Nat;
         storageLimit: Nat;
         storageAvailable: Nat;
         averageFileSize: Nat;
     } {
-        let totalAssets = assets.size();
+        var totalAssets : Nat = 0;
+        var daoStorage : Nat = 0;
+        for ((key, asset) in assets.entries()) {
+            if (key.daoId == daoId) {
+                totalAssets += 1;
+                daoStorage += asset.size;
+            };
+        };
         let averageSize = if (totalAssets > 0) {
-            currentStorageUsed / totalAssets
+            daoStorage / totalAssets
         } else { 0 };
 
         {
             totalAssets = totalAssets;
-            storageUsed = currentStorageUsed;
+            storageUsed = daoStorage;
             storageLimit = maxTotalStorage;
             storageAvailable = maxTotalStorage - currentStorageUsed;
             averageFileSize = averageSize;
@@ -464,11 +518,12 @@ persistent actor AssetCanister {
     };
 
     // Get asset by name (for convenience)
-    public query func getAssetByName(name: Text) : async ?AssetMetadata {
-        for (asset in assets.vals()) {
-            if (asset.name == name and asset.isPublic) {
+    public query func getAssetByName(daoId: DaoId, name: Text) : async ?AssetMetadata {
+        for ((key, asset) in assets.entries()) {
+            if (key.daoId == daoId and asset.name == name and asset.isPublic) {
                 return ?{
                     id = asset.id;
+                    daoId = asset.daoId;
                     name = asset.name;
                     contentType = asset.contentType;
                     size = asset.size;
@@ -484,15 +539,16 @@ persistent actor AssetCanister {
 
     // Batch upload assets
     public shared(_msg) func batchUploadAssets(
+        daoId: DaoId,
         assets_data: [(Text, Text, AssetData, Bool, [Text])]
     ) : async [Result<AssetId, Text>] {
         let results = Buffer.Buffer<Result<AssetId, Text>>(assets_data.size());
-        
+
         for ((name, contentType, data, isPublic, tags) in assets_data.vals()) {
-            let result = await uploadAsset(name, contentType, data, isPublic, tags);
+            let result = await uploadAsset(daoId, name, contentType, data, isPublic, tags);
             results.add(result);
         };
-        
+
         Buffer.toArray(results)
     };
 }

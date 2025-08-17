@@ -91,6 +91,7 @@ persistent actor TreasuryCanister {
 
     // Public functions
 
+
     // Deposit tokens to treasury
     public shared(msg) func deposit(daoId: Principal, amount: TokenAmount, description: Text) : async Result<Nat, Text> {
         if (amount == 0) {
@@ -103,6 +104,7 @@ persistent actor TreasuryCanister {
         let transaction : TreasuryTransaction = {
             id = transactionId;
             daoId = daoId;
+
             transactionType = #deposit;
             amount = amount;
             from = ?msg.caller;
@@ -112,6 +114,7 @@ persistent actor TreasuryCanister {
             description = description;
             status = #completed;
         };
+
 
         transactions.put(transactionId, transaction);
 
@@ -130,6 +133,7 @@ persistent actor TreasuryCanister {
         description: Text,
         proposalId: ?Types.ProposalId
     ) : async Result<Nat, Text> {
+
         let caller = msg.caller;
 
         // Check authorization
@@ -143,12 +147,15 @@ persistent actor TreasuryCanister {
             return #err("Insufficient available balance");
         };
 
+
         let transactionId = nextTransactionId;
         nextTransactionId += 1;
 
         let transaction : TreasuryTransaction = {
+
             id = transactionId;
             daoId = daoId;
+
             transactionType = #withdrawal;
             amount = amount;
             from = null;
@@ -168,6 +175,7 @@ persistent actor TreasuryCanister {
                 balances.put(daoId, { bal with total = bal.total - amount; available = bal.available - amount });
                 
                 let completedTransaction = {
+                    daoId = transaction.daoId;
                     id = transaction.id;
                     transactionType = transaction.transactionType;
                     amount = transaction.amount;
@@ -184,6 +192,7 @@ persistent actor TreasuryCanister {
             };
             case (#err(error)) {
                 let failedTransaction = {
+                    daoId = transaction.daoId;
                     id = transaction.id;
                     transactionType = transaction.transactionType;
                     amount = transaction.amount;
@@ -202,6 +211,7 @@ persistent actor TreasuryCanister {
 
     // Lock tokens for specific purposes (e.g., staking rewards)
     public shared(msg) func lockTokens(daoId: Principal, amount: TokenAmount, reason: Text) : async Result<(), Text> {
+
         if (not isAuthorized(msg.caller)) {
             return #err("Not authorized");
         };
@@ -219,6 +229,7 @@ persistent actor TreasuryCanister {
         let transaction : TreasuryTransaction = {
             id = transactionId;
             daoId = daoId;
+
             transactionType = #stakingReward;
             amount = amount;
             from = null;
@@ -228,6 +239,7 @@ persistent actor TreasuryCanister {
             description = "Locked tokens: " # reason;
             status = #completed;
         };
+
 
         transactions.put(transactionId, transaction);
         #ok()
@@ -252,6 +264,7 @@ persistent actor TreasuryCanister {
         let transaction : TreasuryTransaction = {
             id = transactionId;
             daoId = daoId;
+
             transactionType = #stakingReward;
             amount = amount;
             from = null;
@@ -261,6 +274,7 @@ persistent actor TreasuryCanister {
             description = "Unlocked tokens: " # reason;
             status = #completed;
         };
+
 
         transactions.put(transactionId, transaction);
         #ok()
@@ -285,6 +299,7 @@ persistent actor TreasuryCanister {
         let transaction : TreasuryTransaction = {
             id = transactionId;
             daoId = daoId;
+
             transactionType = #fee;
             amount = amount;
             from = null;
@@ -294,6 +309,7 @@ persistent actor TreasuryCanister {
             description = "Reserved tokens: " # reason;
             status = #completed;
         };
+
 
         transactions.put(transactionId, transaction);
         #ok()
@@ -318,6 +334,7 @@ persistent actor TreasuryCanister {
         let transaction : TreasuryTransaction = {
             id = transactionId;
             daoId = daoId;
+
             transactionType = #fee;
             amount = amount;
             from = null;
@@ -327,6 +344,7 @@ persistent actor TreasuryCanister {
             description = "Released reserved tokens: " # reason;
             status = #completed;
         };
+
 
         transactions.put(transactionId, transaction);
         #ok()

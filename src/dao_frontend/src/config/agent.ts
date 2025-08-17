@@ -54,6 +54,15 @@ if (typeof window !== "undefined") {
   window.global = window;
 }
 
+export interface CanisterIds {
+  daoBackend: string;
+  governance?: string;
+  staking?: string;
+  treasury?: string;
+  proposals?: string;
+  assets?: string;
+}
+
 const createActor = async <T>(
   canisterId: string,
   idlFactory: IDL.InterfaceFactory,
@@ -108,119 +117,99 @@ const createActor = async <T>(
   }
 };
 
+export interface Actors {
+  daoBackend: ActorSubclass<DaoBackendServiceExtended>;
+  governance: ActorSubclass<GovernanceService>;
+  staking: ActorSubclass<StakingService>;
+  treasury: ActorSubclass<TreasuryService>;
+  proposals: ActorSubclass<ProposalsService>;
+  assets: ActorSubclass<AssetsService>;
+}
 
-export const initializeAgents = async (identity?: Identity) => {
-  if (import.meta.env.DEV) {
-    console.log("=== DEBUGGING ENVIRONMENT VARIABLES ===");
-    console.log("All import.meta.env:", import.meta.env);
+const createMockActor = <T>(): ActorSubclass<T> => {
+  return new Proxy({} as ActorSubclass<T>, {
+    get: (target, prop) => {
+      if (typeof prop === 'string') {
+        return async (...args: any[]) => {
+          console.warn(`Mock actor method called: ${prop}`, args);
+          if (prop.includes('get') || prop.includes('fetch') || prop.includes('list')) {
+            return null;
+          }
+          return { ok: true } as unknown as T;
+        };
+      }
+      return target[prop as keyof ActorSubclass<T>];
+    }
+  });
+};
 
-    const envVars = {
-      'VITE_CANISTER_ID_DAO_BACKEND': import.meta.env.VITE_CANISTER_ID_DAO_BACKEND,
-      'VITE_CANISTER_ID_GOVERNANCE': import.meta.env.VITE_CANISTER_ID_GOVERNANCE,
-      'VITE_CANISTER_ID_STAKING': import.meta.env.VITE_CANISTER_ID_STAKING,
-      'VITE_CANISTER_ID_TREASURY': import.meta.env.VITE_CANISTER_ID_TREASURY,
-      'VITE_CANISTER_ID_PROPOSALS': import.meta.env.VITE_CANISTER_ID_PROPOSALS,
-      'VITE_CANISTER_ID_ASSETS': import.meta.env.VITE_CANISTER_ID_ASSETS,
-      'VITE_CANISTER_ID_INTERNET_IDENTITY': import.meta.env.VITE_CANISTER_ID_INTERNET_IDENTITY,
-    };
-
-    Object.entries(envVars).forEach(([key, value]) => {
-      console.log(`${key}:`, value);
-      console.log(`  Type: ${typeof value}`);
-      console.log(`  Length: ${value ? value.length : 'N/A'}`);
-      console.log(`  Contains underscore: ${value ? value.includes('_') : 'N/A'}`);
-      console.log(
-        `  Raw characters:`,
-        value ? [...value].map(c => `${c}(${c.charCodeAt(0)})`).join(' ') : 'N/A'
-      );
-    });
+const handleOptionalActor = async <T>(
+  canisterId: string | undefined,
+  idl: IDL.InterfaceFactory,
+  name: string,
+  identity?: Identity
+): Promise<ActorSubclass<T>> => {
+  if (!canisterId) {
+    if (import.meta.env.DEV) {
+      return createMockActor<T>();
+    }
+    throw new Error(`Missing canister ID for ${name}`);
   }
-
-
   try {
-    // Create actors for required canisters
+    return await createActor<T>(canisterId, idl, identity);
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.warn(`Failed to create ${name.toLowerCase()} actor, using mock:`, error);
+      return createMockActor<T>();
+    }
+    throw error;
+  }
+};
+
+export const initializeAgents = async (
+  canisterIds: CanisterIds,
+  identity?: Identity
+): Promise<Actors> => {
+  try {
     const daoBackend = await createActor<DaoBackendServiceExtended>(
-      import.meta.env.VITE_CANISTER_ID_DAO_BACKEND,
+      canisterIds.daoBackend,
       daoBackendIdl,
       identity
     );
 
-    const assets = await createActor<AssetsService>(
-      import.meta.env.VITE_CANISTER_ID_ASSETS,
+    const assets = await handleOptionalActor<AssetsService>(
+      canisterIds.assets,
       assetsIdl,
+      "ASSETS",
       identity
     );
 
-    // Create mock actors for optional canisters during development if they don't exist
-    // In production, missing canister IDs will throw an error instead of creating mocks
-    const createMockActor = <T>(): ActorSubclass<T> => {
-      return new Proxy({} as ActorSubclass<T>, {
-        get: (target, prop) => {
-          if (typeof prop === 'string') {
-            return async (...args: any[]) => {
-              console.warn(`Mock actor method called: ${prop}`, args);
-              if (prop.includes('get') || prop.includes('fetch') || prop.includes('list')) {
-                return null;
-              }
-              return { ok: true };
-            };
-          }
-          return target[prop as keyof ActorSubclass<T>];
-        }
-      });
-    };
-
-    // Helper to handle optional canisters
-    const handleOptionalActor = async <T>(
-      canisterId: string | undefined,
-      idl: IDL.InterfaceFactory,
-      name: string
-    ): Promise<ActorSubclass<T>> => {
-      if (!canisterId) {
-        if (import.meta.env.DEV) {
-          return createMockActor<T>();
-        }
-        throw new Error(`Missing environment variable: VITE_CANISTER_ID_${name}`);
-      }
-      try {
-        return await createActor<T>(canisterId, idl, identity);
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.warn(`Failed to create ${name.toLowerCase()} actor, using mock:`, error);
-          return createMockActor<T>();
-        }
-        throw error;
-      }
-    };
-
-    // Create actors, using mocks only in development
-    let governance: ActorSubclass<GovernanceService>;
-    let staking: ActorSubclass<StakingService>;
-    let treasury: ActorSubclass<TreasuryService>;
-    let proposals: ActorSubclass<ProposalsService>;
-
-    governance = await handleOptionalActor<GovernanceService>(
-      import.meta.env.VITE_CANISTER_ID_GOVERNANCE,
+    const governance = await handleOptionalActor<GovernanceService>(
+      canisterIds.governance,
       governanceIdl,
-      "GOVERNANCE"
+      "GOVERNANCE",
+      identity
     );
 
-    staking = await handleOptionalActor<StakingService>(
-      import.meta.env.VITE_CANISTER_ID_STAKING,
+    const staking = await handleOptionalActor<StakingService>(
+      canisterIds.staking,
       stakingIdl,
-      "STAKING"
+      "STAKING",
+      identity
     );
 
-    treasury = await handleOptionalActor<TreasuryService>(
-      import.meta.env.VITE_CANISTER_ID_TREASURY,
+    const treasury = await handleOptionalActor<TreasuryService>(
+      canisterIds.treasury,
       treasuryIdl,
-      "TREASURY"
+      "TREASURY",
+      identity
     );
 
-    proposals = await handleOptionalActor<ProposalsService>(
-      import.meta.env.VITE_CANISTER_ID_PROPOSALS,
+    const proposals = await handleOptionalActor<ProposalsService>(
+      canisterIds.proposals,
       proposalsIdl,
-      "PROPOSALS"
+      "PROPOSALS",
+      identity
     );
 
     return {
