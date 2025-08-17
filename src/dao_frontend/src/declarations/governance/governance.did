@@ -4,8 +4,9 @@ type VoteChoice =
    against;
    inFavor;
  };
-type Vote = 
+type Vote =
  record {
+   daoId: Principal;
    choice: VoteChoice;
    proposalId: ProposalId;
    reason: opt text;
@@ -48,8 +49,9 @@ type ProposalStatus =
    succeeded;
  };
 type ProposalId = nat;
-type Proposal = 
+type Proposal =
  record {
+   daoId: Principal;
    approvalThreshold: nat;
    createdAt: Time;
    description: text;
@@ -90,13 +92,13 @@ type GovernanceConfig =
    votingPeriod: nat;
  };
 service : {
-  createProposal: (title: text, description: text, proposalType:
+  createProposal: (daoId: principal, title: text, description: text, proposalType:
    ProposalType, votingPeriod: opt nat) -> (Result_1);
-  executeProposal: (proposalId: ProposalId) -> (Result);
-  getActiveProposals: () -> (vec Proposal) query;
-  getAllProposals: () -> (vec Proposal) query;
-  getConfig: () -> (opt GovernanceConfig) query;
-  getGovernanceStats: () ->
+  executeProposal: (daoId: principal, proposalId: ProposalId) -> (Result);
+  getActiveProposals: (daoId: principal) -> (vec Proposal) query;
+  getAllProposals: (daoId: principal) -> (vec Proposal) query;
+  getConfig: (daoId: principal) -> (opt GovernanceConfig) query;
+  getGovernanceStats: (daoId: principal) ->
    (record {
       activeProposals: nat;
       failedProposals: nat;
@@ -104,12 +106,12 @@ service : {
       totalProposals: nat;
       totalVotes: nat;
     }) query;
-  getProposal: (proposalId: ProposalId) -> (opt Proposal) query;
-  getProposalVotes: (proposalId: ProposalId) -> (vec Vote) query;
-  getProposalsByStatus: (status: ProposalStatus) -> (vec Proposal) query;
-  getUserVote: (proposalId: ProposalId, user: principal) -> (opt Vote) query;
+  getProposal: (daoId: principal, proposalId: ProposalId) -> (opt Proposal) query;
+  getProposalVotes: (daoId: principal, proposalId: ProposalId) -> (vec Vote) query;
+  getProposalsByStatus: (daoId: principal, status: ProposalStatus) -> (vec Proposal) query;
+  getUserVote: (daoId: principal, proposalId: ProposalId, user: principal) -> (opt Vote) query;
   init: (newDaoId: principal, newStakingId: principal) -> ();
-  updateConfig: (newConfig: GovernanceConfig) -> (Result);
-  vote: (proposalId: ProposalId, choice: VoteChoice, reason: opt text) ->
+  updateConfig: (daoId: principal, newConfig: GovernanceConfig) -> (Result);
+  vote: (daoId: principal, proposalId: ProposalId, choice: VoteChoice, reason: opt text) ->
    (Result);
 }

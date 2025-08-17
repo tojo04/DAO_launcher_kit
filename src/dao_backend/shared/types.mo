@@ -94,6 +94,7 @@ module {
         oldValue: Text;
     };
 
+
     public type MembershipChangeProposal = {
         member: Principal;
         action: { #add; #remove };
@@ -108,6 +109,7 @@ module {
         description: Text;
         proposalType: ProposalType;
         status: ProposalStatus;
+
         votesInFavor: Nat;
         votesAgainst: Nat;
         totalVotingPower: Nat;
@@ -118,9 +120,10 @@ module {
         approvalThreshold: Nat; // Percentage (0-100)
     };
 
+
     // Voting types
     public type VoteChoice = { #inFavor; #against; #abstain };
-    
+
     public type Vote = {
         daoId: Principal;
         voter: Principal;
@@ -130,6 +133,7 @@ module {
         timestamp: Time;
         reason: ?Text;
     };
+
 
     // Staking types
     public type StakeId = Nat;
