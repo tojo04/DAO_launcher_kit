@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useActors } from '../context/ActorContext';
+import { useDAO } from '../context/DAOContext';
 import BackgroundParticles from './BackgroundParticles';
 import { Loader2 } from 'lucide-react';
 import StatusWidget from './StatusWidget';
@@ -11,6 +12,7 @@ const formatPrincipal = (opt) => (opt && opt[0] ? opt[0].toText() : 'Not set');
 const DAOStatus = () => {
   const { isAuthenticated, loading } = useAuth();
   const { daoBackend } = useActors();
+  const { activeDAO } = useDAO();
 
   const [config, setConfig] = useState(null);
   const [references, setReferences] = useState(null);
@@ -19,17 +21,18 @@ const DAOStatus = () => {
 
   useEffect(() => {
     const fetchStatus = async () => {
+      if (!daoBackend || !activeDAO?.id) return;
       try {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore - generated type may not include these methods yet
-        const cfgOpt = await daoBackend.getDAOConfig();
+        const cfgOpt = await daoBackend.getDAOConfig(activeDAO.id);
         const cfg = Array.isArray(cfgOpt) && cfgOpt.length ? cfgOpt[0] : null;
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        const refs = await daoBackend.getCanisterReferences();
+        const refs = await daoBackend.getCanisterReferences(activeDAO.id);
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        const s = await daoBackend.getDAOStats();
+        const s = await daoBackend.getDAOStats(activeDAO.id);
         setConfig(cfg);
         setReferences(refs);
         setStats(s);
@@ -40,7 +43,7 @@ const DAOStatus = () => {
       }
     };
     fetchStatus();
-  }, [daoBackend]);
+  }, [daoBackend, activeDAO]);
 
   if (loading || fetching) {
     return (

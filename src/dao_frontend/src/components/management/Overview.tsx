@@ -36,7 +36,7 @@ const Overview: React.FC = () => {
   useEffect(() => {
     const fetchRecentActivity = async () => {
       try {
-        const activity = await daoBackend.getRecentActivity();
+        const activity = await daoBackend.getRecentActivity(dao.id);
         setRecentActivity(activity || []);
       } catch (err) {
         console.error('Failed to fetch recent activity', err);
@@ -46,7 +46,7 @@ const Overview: React.FC = () => {
     if (daoBackend) {
       fetchRecentActivity();
     }
-  }, [daoBackend]);
+  }, [daoBackend, dao.id]);
 
   const quickStats = [
     {
