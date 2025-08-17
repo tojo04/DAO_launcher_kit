@@ -1,26 +1,44 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
-import { 
-  FileText, 
-  Plus, 
-  Vote,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Users,
-  Calendar,
-  Target,
-  TrendingUp
-} from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { DAO } from '../../types/dao';
+import { useProposals } from '../../hooks/useProposals';
 
 const ManagementProposals: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
+  const { createProposal, getAllProposals, loading, error } = useProposals();
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [proposals, setProposals] = useState<any[]>([]);
+
+  const fetchProposals = async () => {
+    try {
+      const list = await getAllProposals();
+      setProposals(list || []);
+    } catch {
+      // error handled in hook
+    }
+  };
+
+  useEffect(() => {
+    fetchProposals();
+  }, []);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createProposal(title, description, '', '');
+      setTitle('');
+      setDescription('');
+      fetchProposals();
+    } catch {
+      // error handled in hook
+    }
+  };
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-white mb-2 font-mono">PROPOSALS</h2>
@@ -28,44 +46,56 @@ const ManagementProposals: React.FC = () => {
             Create and manage governance proposals for {dao.name}
           </p>
         </div>
+      </div>
+
+      <form onSubmit={handleCreate} className="space-y-4">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title"
+          className="w-full p-2 rounded bg-gray-900 border border-gray-700 text-white"
+        />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Description"
+          className="w-full p-2 rounded bg-gray-900 border border-gray-700 text-white"
+        />
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all font-semibold"
+          type="submit"
+          disabled={loading}
+          className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg"
         >
           <Plus className="w-4 h-4" />
-          <span>New Proposal</span>
+          <span>{loading ? 'Creating...' : 'New Proposal'}</span>
         </motion.button>
-      </div>
+      </form>
 
-      {/* Placeholder Content */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-8 text-center"
-      >
-        <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-white mb-2 font-mono">PROPOSALS MANAGEMENT</h3>
-        <p className="text-gray-400 mb-6">
-          This section will contain detailed proposal management functionality
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-900/50 border border-blue-500/30 p-4 rounded-lg">
-            <Vote className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-            <p className="text-blue-400 font-mono">Create Proposals</p>
-          </div>
-          <div className="bg-gray-900/50 border border-green-500/30 p-4 rounded-lg">
-            <Users className="w-8 h-8 text-green-400 mx-auto mb-2" />
-            <p className="text-green-400 font-mono">Vote on Proposals</p>
-          </div>
-          <div className="bg-gray-900/50 border border-purple-500/30 p-4 rounded-lg">
-            <TrendingUp className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-            <p className="text-purple-400 font-mono">Track Results</p>
-          </div>
-        </div>
-      </motion.div>
+      {error && <p className="text-red-500">{error}</p>}
+
+      <div className="space-y-4">
+        {loading && proposals.length === 0 ? (
+          <p className="text-gray-400">Loading...</p>
+        ) : (
+          proposals.map((p) => (
+            <div
+              key={p.id.toString()}
+              className="p-4 bg-gray-800/50 border border-gray-700/50 rounded-lg"
+            >
+              <h4 className="text-white font-semibold">{p.title}</h4>
+              <p className="text-gray-400 text-sm">{p.description}</p>
+            </div>
+          ))
+        )}
+        {proposals.length === 0 && !loading && (
+          <p className="text-gray-400 text-center">No proposals found</p>
+        )}
+      </div>
     </div>
   );
 };
 
 export default ManagementProposals;
+
