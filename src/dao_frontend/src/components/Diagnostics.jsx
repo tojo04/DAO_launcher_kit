@@ -2,7 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useDAOAPI } from '../utils/daoAPI';
 import { useAssets } from '../hooks/useAssets';
+
 import { useDAOManagement } from '../context/DAOManagementContext';
+
+import { useDAO } from '../context/DAOContext';
+
 import BackgroundParticles from './BackgroundParticles';
 import { Loader2 } from 'lucide-react';
 
@@ -36,7 +40,11 @@ const Diagnostics = () => {
   const { isAuthenticated, loading } = useAuth();
   const daoAPI = useDAOAPI();
   const { getHealth: getAssetsHealth } = useAssets();
+
   const { selectedDAO } = useDAOManagement();
+
+  const { activeDAO } = useDAO();
+
 
   const [references, setReferences] = useState(null);
   const [fetching, setFetching] = useState(true);
@@ -47,9 +55,17 @@ const Diagnostics = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!daoAPI || !selectedDAO?.id) return;
+
+      if (!daoAPI || !activeDAO) return;
+
+      setFetching(true);
+      setReferences(null);
+      setBackendHealth(null);
+      setAssetsHealth(null);
+      setError(null);
+      setHealthErrors({ backend: null, assets: null });
       try {
-        const refs = await daoAPI.getCanisterReferences(selectedDAO.id);
+
         setReferences(refs);
       } catch (err) {
         console.error('Failed to fetch canister references', err);
@@ -57,6 +73,7 @@ const Diagnostics = () => {
       }
 
       try {
+        // DAO backend currently provides only a global health endpoint
         const backend = await daoAPI.healthCheck();
         setBackendHealth(backend);
       } catch (err) {
@@ -65,6 +82,7 @@ const Diagnostics = () => {
       }
 
       try {
+        // Assets canister health is also global
         const assets = await getAssetsHealth();
         setAssetsHealth(assets);
       } catch (err) {
@@ -75,6 +93,7 @@ const Diagnostics = () => {
       }
     };
     fetchData();
+
   }, [daoAPI, getAssetsHealth, selectedDAO]);
 
   if (loading || fetching) {

@@ -625,6 +625,11 @@ localStorage.removeItem('ic-identity');
 const authClient = await AuthClient.create();
 ```
 
+#### 4. Diagnostics Health Checks
+Currently, both the DAO backend and assets canisters expose only global `health` endpoints.
+The `Diagnostics` screen will therefore display service status for the overall canisters and
+cannot provide DAO-specific health information.
+
 ### Debug Tools
 
 #### 1. Backend Debugging
