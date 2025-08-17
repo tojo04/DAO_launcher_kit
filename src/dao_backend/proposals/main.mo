@@ -9,6 +9,7 @@ import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Nat32 "mo:base/Nat32";
+import Error "mo:base/Error";
 
 import Types "../shared/types";
 
@@ -54,6 +55,8 @@ persistent actor ProposalsCanister {
     private var templatesEntries : [(Nat, ProposalTemplate)] = [];
     private var categoriesEntries : [(Text, ProposalCategory)] = [];
     private var configEntries : [(Text, GovernanceConfig)] = [];
+    private var stakingCanisterId : ?Principal = null;
+    private var initialized : Bool = false;
 
     // Runtime storage
     private transient var proposals = HashMap.HashMap<ProposalKey, Proposal>(10, eqProposalKey, hashProposalKey);
@@ -63,14 +66,14 @@ persistent actor ProposalsCanister {
     private transient var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
 
     // Inter-canister reference to staking for voting power
-    var staking : actor {
+    var staking : ?actor {
         getUserStakingSummary: shared query (Principal, Principal) -> async {
             totalStaked: Nat;
             totalRewards: Nat;
             activeStakes: Nat;
             totalVotingPower: Nat;
         };
-    } = actor("aaaaa-aa");
+    } = null;
 
     // Initialize default data
     private func initializeDefaults() {
@@ -167,12 +170,16 @@ persistent actor ProposalsCanister {
             Text.hash
         );
         config := HashMap.fromIter<Text, GovernanceConfig>(
-            configEntries.vals(), 
-            configEntries.size(), 
-            Text.equal, 
+            configEntries.vals(),
+            configEntries.size(),
+            Text.equal,
             Text.hash
         );
-        
+        switch (stakingCanisterId) {
+            case (?id) staking := ?actor(Principal.toText(id));
+            case null {};
+        };
+
         if (config.size() == 0 or categories.size() == 0 or templates.size() == 0) {
             initializeDefaults();
         };
@@ -185,7 +192,12 @@ persistent actor ProposalsCanister {
 
     // Set staking canister reference
     public shared(_msg) func init(stakingId: Principal) {
-        staking := actor(Principal.toText(stakingId));
+        if (initialized) {
+            throw Error.reject("Proposals canister already initialized");
+        };
+        staking := ?actor(Principal.toText(stakingId));
+        stakingCanisterId := ?stakingId;
+        initialized := true;
     };
 
     // Public functions
@@ -199,6 +211,9 @@ persistent actor ProposalsCanister {
         category: ?Text,
         votingPeriod: ?Nat
     ) : async Result<ProposalId, Text> {
+        if (not initialized) {
+            return #err("Canister not initialized");
+        };
         let caller = msg.caller;
         
         // Check if user has too many active proposals
@@ -250,6 +265,9 @@ persistent actor ProposalsCanister {
         parameters: [(Text, Text)],
         votingPeriod: ?Nat
     ) : async Result<ProposalId, Text> {
+        if (not initialized) {
+            return #err("Canister not initialized");
+        };
         let template = switch (templates.get(templateId)) {
             case (?t) t;
             case null return #err("Template not found");
@@ -285,13 +303,18 @@ persistent actor ProposalsCanister {
         daoId: Principal,
         votes: [(ProposalId, Types.VoteChoice, ?Text)]
     ) : async [Result<(), Text>] {
+        if (not initialized) {
+            return Array.tabulate<Result<(), Text>>(votes.size(), func (_ : Nat) : Result<(), Text> {
+                #err("Canister not initialized")
+            });
+        };
         let results = Buffer.Buffer<Result<(), Text>>(votes.size());
 
         for ((proposalId, choice, reason) in votes.vals()) {
             let result = await vote(daoId, proposalId, choice, reason);
             results.add(result);
         };
-        
+
         Buffer.toArray(results)
     };
 
@@ -302,6 +325,9 @@ persistent actor ProposalsCanister {
         choice: Types.VoteChoice,
         reason: ?Text
     ) : async Result<(), Text> {
+        if (not initialized) {
+            return #err("Canister not initialized");
+        };
         let caller = msg.caller;
         let voteKey = Principal.toText(daoId) # "_" # Nat.toText(proposalId) # "_" # Principal.toText(caller);
 
@@ -327,8 +353,12 @@ persistent actor ProposalsCanister {
         };
 
         // Determine voting power from staking
+        let stakingActor = switch (staking) {
+            case (?s) s;
+            case null return #err("Canister not initialized");
+        };
         let summary = try {
-            await staking.getUserStakingSummary(daoId, caller)
+            await stakingActor.getUserStakingSummary(daoId, caller)
         } catch (_) {
             return #err("Failed to get staking summary");
         };
@@ -419,11 +449,17 @@ persistent actor ProposalsCanister {
 
     // Get proposal by ID
     public query func getProposal(daoId: Principal, proposalId: ProposalId) : async ?Proposal {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         proposals.get((daoId, proposalId))
     };
 
     // Get all proposals
     public query func getAllProposals(daoId: Principal) : async [Proposal] {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         let filtered = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
             if (proposal.daoId == daoId) {
@@ -435,6 +471,9 @@ persistent actor ProposalsCanister {
 
     // Get proposals by category
     public query func getProposalsByCategory(daoId: Principal, category: Text) : async [Proposal] {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         let filteredProposals = Buffer.Buffer<Proposal>(0);
         // Category filtering not implemented yet; return all proposals for DAO
         for (proposal in proposals.vals()) {
@@ -447,6 +486,9 @@ persistent actor ProposalsCanister {
 
     // Get trending proposals (by vote activity)
     public query func getTrendingProposals(daoId: Principal, limit: Nat) : async [Proposal] {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         let allProposals = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
             if (proposal.daoId == daoId) {
@@ -468,21 +510,33 @@ persistent actor ProposalsCanister {
 
     // Get proposal templates
     public query func getProposalTemplates(_daoId: Principal) : async [ProposalTemplate] {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         Iter.toArray(templates.vals())
     };
 
     // Get proposal categories
     public query func getProposalCategories(_daoId: Principal) : async [ProposalCategory] {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         Iter.toArray(categories.vals())
     };
 
     // Get template by ID
     public query func getTemplate(_daoId: Principal, templateId: Nat) : async ?ProposalTemplate {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         templates.get(templateId)
     };
 
     // Get templates by category
     public query func getTemplatesByCategory(_daoId: Principal, category: Text) : async [ProposalTemplate] {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         let filteredTemplates = Buffer.Buffer<ProposalTemplate>(0);
         for (template in templates.vals()) {
             if (template.category == category) {
@@ -503,6 +557,9 @@ persistent actor ProposalsCanister {
         requiredFields: [Text],
         template: Text
     ) : async Result<Nat, Text> {
+        if (not initialized) {
+            return #err("Canister not initialized");
+        };
         let templateId = nextTemplateId;
         nextTemplateId += 1;
 
@@ -527,6 +584,9 @@ persistent actor ProposalsCanister {
         description: Text,
         color: Text
     ) : async Result<(), Text> {
+        if (not initialized) {
+            return #err("Canister not initialized");
+        };
         let newCategory : ProposalCategory = {
             id = id;
             name = name;
@@ -559,6 +619,9 @@ persistent actor ProposalsCanister {
         totalTemplates: Nat;
         totalCategories: Nat;
     } {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         var activeCount = 0;
         var succeededCount = 0;
         var failedCount = 0;
