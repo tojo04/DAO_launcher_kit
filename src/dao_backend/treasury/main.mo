@@ -478,9 +478,11 @@ persistent actor TreasuryCanister {
 
     // Administrative functions
 
-    // Add authorized principal
-    public shared(_msg) func addAuthorizedPrincipal(daoId: Principal, principal: Principal) : async Result<(), Text> {
-        // In real implementation, only governance or admin should be able to do this
+    // Add authorized principal (admin only)
+    public shared(msg) func addAuthorizedPrincipal(daoId: Principal, principal: Principal) : async Result<(), Text> {
+        if (not isAdmin(daoId, msg.caller)) {
+            return #err("Not authorized");
+        };
         let principals = Buffer.fromArray<Principal>(
             switch (authorizedPrincipals.get(daoId)) {
                 case (?arr) arr;
@@ -492,9 +494,11 @@ persistent actor TreasuryCanister {
         #ok()
     };
 
-    // Remove authorized principal
-    public shared(_msg) func removeAuthorizedPrincipal(daoId: Principal, principal: Principal) : async Result<(), Text> {
-        // In real implementation, only governance or admin should be able to do this
+    // Remove authorized principal (admin only)
+    public shared(msg) func removeAuthorizedPrincipal(daoId: Principal, principal: Principal) : async Result<(), Text> {
+        if (not isAdmin(daoId, msg.caller)) {
+            return #err("Not authorized");
+        };
         let updated = switch (authorizedPrincipals.get(daoId)) {
             case (?arr) Array.filter<Principal>(arr, func(p) = p != principal);
             case null [];
@@ -537,6 +541,11 @@ persistent actor TreasuryCanister {
             case (?arr) { Array.find<Principal>(arr, func(p) = p == principal) != null };
             case null { false };
         }
+    };
+
+    private func isAdmin(daoId: Principal, principal: Principal) : Bool {
+        // For now, reuse the authorized principal list for admin checks
+        isAuthorized(daoId, principal)
     };
 
     private func executeWithdrawal(_transactionId: Nat) : async Result<(), Text> {
