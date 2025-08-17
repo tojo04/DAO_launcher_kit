@@ -11,10 +11,9 @@ export const useStaking = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = Principal.fromText(daoId);
       const periodVariant = { [period]: null };
       const res = await actors.staking.stake(
-        daoPrincipal,
+        daoId,
         BigInt(amount),
         periodVariant
       );
@@ -32,9 +31,8 @@ export const useStaking = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = Principal.fromText(daoId);
       const res = await actors.staking.unstake(
-        daoPrincipal,
+        daoId,
         BigInt(stakeId)
       );
       if ('err' in res) throw new Error(res.err);
@@ -51,9 +49,8 @@ export const useStaking = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = Principal.fromText(daoId);
       const res = await actors.staking.claimRewards(
-        daoPrincipal,
+        daoId,
         BigInt(stakeId)
       );
       if ('err' in res) throw new Error(res.err);
@@ -71,9 +68,8 @@ export const useStaking = () => {
     setError(null);
     try {
       const periodVariant = { [newPeriod]: null };
-      const daoPrincipal = Principal.fromText(daoId);
       const res = await actors.staking.extendStakingPeriod(
-        daoPrincipal,
+        daoId,
         BigInt(stakeId),
         periodVariant
       );
@@ -91,8 +87,7 @@ export const useStaking = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = Principal.fromText(daoId);
-      return await actors.staking.getStake(daoPrincipal, BigInt(stakeId));
+      return await actors.staking.getStake(daoId, BigInt(stakeId));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -105,9 +100,8 @@ export const useStaking = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = Principal.fromText(daoId);
       return await actors.staking.getStakingRewards(
-        daoPrincipal,
+        daoId,
         BigInt(stakeId)
       );
     } catch (err) {
@@ -122,8 +116,7 @@ export const useStaking = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = Principal.fromText(daoId);
-      return await actors.staking.getStakingStats(daoPrincipal);
+      return await actors.staking.getStakingStats(daoId);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -137,8 +130,7 @@ export const useStaking = () => {
     setError(null);
     try {
       const principal = Principal.fromText(user);
-      const daoPrincipal = Principal.fromText(daoId);
-      return await actors.staking.getUserStakes(daoPrincipal, principal);
+      return await actors.staking.getUserStakes(daoId, principal);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -152,8 +144,7 @@ export const useStaking = () => {
     setError(null);
     try {
       const principal = Principal.fromText(user);
-      const daoPrincipal = Principal.fromText(daoId);
-      return await actors.staking.getUserActiveStakes(daoPrincipal, principal);
+      return await actors.staking.getUserActiveStakes(daoId, principal);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -167,9 +158,8 @@ export const useStaking = () => {
     setError(null);
     try {
       const principal = Principal.fromText(user);
-      const daoPrincipal = Principal.fromText(daoId);
       return await actors.staking.getUserStakingSummary(
-        daoPrincipal,
+        daoId,
         principal
       );
     } catch (err) {

@@ -14,7 +14,7 @@ export const useAssets = () => {
       const arrayBuffer = await file.arrayBuffer();
       const data = Array.from(new Uint8Array(arrayBuffer));
       const result = await actors.assets.uploadAsset(
-        Principal.fromText(daoId),
+        daoId,
         file.name,
         file.type,
         data,
@@ -38,7 +38,7 @@ export const useAssets = () => {
     setError(null);
     try {
       const res = await actors.assets.getAsset(
-        Principal.fromText(daoId),
+        daoId,
         BigInt(assetId)
       );
       if (res.err) {
@@ -58,7 +58,7 @@ export const useAssets = () => {
     setError(null);
     try {
       return await actors.assets.getAssetMetadata(
-        Principal.fromText(daoId),
+        daoId,
         BigInt(assetId)
       );
     } catch (err) {
@@ -73,7 +73,7 @@ export const useAssets = () => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getPublicAssets(Principal.fromText(daoId));
+      return await actors.assets.getPublicAssets(daoId);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -86,7 +86,7 @@ export const useAssets = () => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getUserAssets(Principal.fromText(daoId));
+      return await actors.assets.getUserAssets(daoId);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -100,7 +100,7 @@ export const useAssets = () => {
     setError(null);
     try {
       return await actors.assets.searchAssetsByTag(
-        Principal.fromText(daoId),
+        daoId,
         tag
       );
     } catch (err) {
@@ -116,7 +116,7 @@ export const useAssets = () => {
     setError(null);
     try {
       const res = await actors.assets.deleteAsset(
-        Principal.fromText(daoId),
+        daoId,
         BigInt(assetId)
       );
       if (res.err) {
@@ -136,7 +136,7 @@ export const useAssets = () => {
     setError(null);
     try {
       const res = await actors.assets.updateAssetMetadata(
-        Principal.fromText(daoId),
+        daoId,
         BigInt(assetId),
         name === null ? [] : [name],
         isPublic === null ? [] : [isPublic],
@@ -158,7 +158,7 @@ export const useAssets = () => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getStorageStats(Principal.fromText(daoId));
+      return await actors.assets.getStorageStats(daoId);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -260,7 +260,7 @@ export const useAssets = () => {
     setError(null);
     try {
       return await actors.assets.getAssetByName(
-        Principal.fromText(daoId),
+        daoId,
         name
       );
     } catch (err) {
@@ -283,7 +283,7 @@ export const useAssets = () => {
         })
       );
       return await actors.assets.batchUploadAssets(
-        Principal.fromText(daoId),
+        daoId,
         formatted
       );
     } catch (err) {
