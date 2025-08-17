@@ -356,7 +356,7 @@ const LaunchDAO = () => {
       
       // Also try to launch via the backend if available
       try {
-        await launchDAO(formData);
+        await launchDAO(daoData.id, formData);
       } catch (backendError) {
         console.warn('Backend DAO creation failed, but UI DAO was created:', backendError);
       }

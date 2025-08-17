@@ -1,32 +1,31 @@
 import { useEffect } from 'react';
-import { useActors } from '../context/ActorContext';
 import { useAuth } from '../context/AuthContext';
+import { useDAOAPI } from '../utils/daoAPI';
+import { useDAOManagement } from '../context/DAOManagementContext';
 
 const UserRegistrationHandler = () => {
   const { identity, userSettings } = useAuth();
-  const actors = useActors();
+  const daoAPI = useDAOAPI();
+  const { selectedDAO } = useDAOManagement();
 
   useEffect(() => {
     const registerUser = async () => {
-      if (identity && actors) {
+      if (identity && daoAPI && selectedDAO?.id) {
         try {
-          const result = await actors.daoBackend.registerUser(
-            userSettings.displayName,
-            ''
-          );
-          if ('err' in result && result.err !== 'User already registered') {
-            console.error('Failed to register user:', result.err);
-          }
+          await daoAPI.registerUser(selectedDAO.id, userSettings.displayName, '');
         } catch (error) {
-          console.error('Failed to register user:', error);
+          if (error.message !== 'User already registered') {
+            console.error('Failed to register user:', error);
+          }
         }
       }
     };
 
     registerUser();
-  }, [identity, actors, userSettings.displayName]);
+  }, [identity, daoAPI, selectedDAO, userSettings.displayName]);
 
   return null;
 };
 
 export default UserRegistrationHandler;
+

@@ -23,10 +23,10 @@ const ManagementAdmins: React.FC = () => {
     if (!daoAPI) return;
     try {
       setLoading(true);
-      const users = await daoAPI.getAllUsers();
+      const users = await daoAPI.getAllUsers(dao.id);
       const adminList: string[] = [];
       for (const user of users) {
-        const isAdmin = await daoAPI.checkIsAdmin(user.id);
+        const isAdmin = await daoAPI.checkIsAdmin(dao.id, user.id);
         if (isAdmin) {
           adminList.push(user.id.toText());
         }
@@ -42,7 +42,7 @@ const ManagementAdmins: React.FC = () => {
   const verifyAccess = async () => {
     if (!daoAPI || !principal) return;
     try {
-      const isAdmin = await daoAPI.checkIsAdmin(Principal.fromText(principal));
+      const isAdmin = await daoAPI.checkIsAdmin(dao.id, Principal.fromText(principal));
       setIsAuthorized(isAdmin);
       if (isAdmin) {
         await loadAdmins();
@@ -64,7 +64,7 @@ const ManagementAdmins: React.FC = () => {
     setMessage('');
     setError('');
     try {
-      await daoAPI.addAdmin(Principal.fromText(newAdmin));
+      await daoAPI.addAdmin(dao.id, Principal.fromText(newAdmin));
       setMessage('Admin added successfully');
       setNewAdmin('');
       await loadAdmins();
@@ -78,7 +78,7 @@ const ManagementAdmins: React.FC = () => {
     setMessage('');
     setError('');
     try {
-      await daoAPI.removeAdmin(Principal.fromText(admin));
+      await daoAPI.removeAdmin(dao.id, Principal.fromText(admin));
       setMessage('Admin removed successfully');
       await loadAdmins();
     } catch (err: any) {
