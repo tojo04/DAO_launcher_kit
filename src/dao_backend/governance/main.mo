@@ -66,25 +66,22 @@ persistent actor GovernanceCanister {
     // Inter-canister communication setup
     // Actor reference for staking canister
 
-    var staking : actor {
+    var staking : ?actor {
         getUserStakingSummary: shared query (Principal, Principal) -> async {
-
             totalStaked: Nat;
             totalRewards: Nat;
             activeStakes: Nat;
             totalVotingPower: Nat;
         };
-
-    } = actor("aaaaa-aa");
+    } = null;
 
     // Inter-canister communication setup
 
     // These actor references enable cross-canister calls for governance functionality
-    var dao : actor {
+    var dao : ?actor {
         getUserProfile: shared query (Types.DAOId, Principal) -> async ?Types.UserProfile;
         checkIsAdmin: shared query (Types.DAOId, Principal) -> async Bool;
-
-    } = actor("aaaaa-aa");
+    } = null;
 
     // Stable storage for upgrade persistence
     // These arrays store serialized data that survives canister upgrades
@@ -92,8 +89,8 @@ persistent actor GovernanceCanister {
     private var proposalsEntries : [(ProposalKey, Proposal)] = [];
     private var votesEntries : [(VoteKey, Vote)] = [];
     private var configEntries : [(Principal, GovernanceConfig)] = [];
-    private var stakingId : Principal = Principal.fromText("aaaaa-aa");
-    private var daoInstance : Types.DAOId = "";
+    private var stakingId : ?Principal = null;
+    private var daoInstance : ?Types.DAOId = null;
     private var initialized : Bool = false;
 
     // Runtime storage - rebuilt from stable storage after upgrades
@@ -121,11 +118,10 @@ persistent actor GovernanceCanister {
             throw Error.reject("Caller is not authorized to initialize");
         };
 
-        stakingId := newStakingId;
-
-        daoInstance := daoInstanceId;
-        dao := daoTemp;
-        staking := actor(Principal.toText(newStakingId));
+        stakingId := ?newStakingId;
+        daoInstance := ?daoInstanceId;
+        dao := ?daoTemp;
+        staking := ?actor(Principal.toText(newStakingId));
         initialized := true;
         Debug.print("Initialization complete");
     };
@@ -179,7 +175,10 @@ persistent actor GovernanceCanister {
             Principal.hash
         );
 
-        staking := actor(Principal.toText(stakingId));
+        switch (stakingId) {
+            case (?id) staking := ?actor(Principal.toText(id));
+            case null {};
+        };
     };
 
     // Public functions
@@ -192,6 +191,9 @@ persistent actor GovernanceCanister {
         proposalType: Types.ProposalType,
         votingPeriod: ?Nat
     ) : async Result<ProposalId, Text> {
+        if (not initialized) {
+            return #err("Canister not initialized");
+        };
 
         let caller = msg.caller;
 
@@ -242,6 +244,9 @@ persistent actor GovernanceCanister {
         choice: Types.VoteChoice,
         reason: ?Text
     ) : async Result<(), Text> {
+        if (not initialized) {
+            return #err("Canister not initialized");
+        };
 
         let caller = msg.caller;
         let voteKey : VoteKey = (daoId, proposalId, caller);
@@ -268,14 +273,26 @@ persistent actor GovernanceCanister {
         };
 
         // Verify voter registration using the DAO backend actor
-        let profileOpt = await dao.getUserProfile(daoInstance, caller);
+        let daoActor = switch (dao) {
+            case (?d) d;
+            case null return #err("Canister not initialized");
+        };
+        let instanceId = switch (daoInstance) {
+            case (?id) id;
+            case null return #err("Canister not initialized");
+        };
+        let profileOpt = await daoActor.getUserProfile(instanceId, caller);
         switch (profileOpt) {
             case null return #err("User not registered");
             case (?_) {};
         };
 
         // Determine voting power from staking data
-        let summary = await staking.getUserStakingSummary(daoId, caller);
+        let stakingActor = switch (staking) {
+            case (?s) s;
+            case null return #err("Canister not initialized");
+        };
+        let summary = await stakingActor.getUserStakingSummary(daoId, caller);
         let votingPower = summary.totalVotingPower;
         if (votingPower == 0) {
             return #err("No voting power");
@@ -365,6 +382,10 @@ persistent actor GovernanceCanister {
 
     // Execute a proposal
     public shared(_msg) func executeProposal(daoId: Principal, proposalId: ProposalId) : async Result<(), Text> {
+        if (not initialized) {
+            return #err("Canister not initialized");
+        };
+
         let proposal = switch (proposals.get((daoId, proposalId))) {
             case (?p) p;
             case null return #err("Proposal not found");
@@ -466,11 +487,17 @@ persistent actor GovernanceCanister {
 
     // Get proposal by ID
     public query func getProposal(daoId: Principal, proposalId: ProposalId) : async ?Proposal {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         proposals.get((daoId, proposalId))
     };
 
     // Get all proposals for a DAO
     public query func getAllProposals(daoId: Principal) : async [Proposal] {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         let buffer = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
             if (proposal.daoId == daoId) {
@@ -482,6 +509,9 @@ persistent actor GovernanceCanister {
 
     // Get active proposals for a DAO
     public query func getActiveProposals(daoId: Principal) : async [Proposal] {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         let activeProposals = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
             if (proposal.daoId == daoId and proposal.status == #active and Time.now() <= proposal.votingDeadline) {
@@ -493,6 +523,9 @@ persistent actor GovernanceCanister {
 
     // Get proposals by status for a DAO
     public query func getProposalsByStatus(daoId: Principal, status: Types.ProposalStatus) : async [Proposal] {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         let filteredProposals = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
             if (proposal.daoId == daoId and proposal.status == status) {
@@ -504,11 +537,17 @@ persistent actor GovernanceCanister {
 
     // Get user's vote on a proposal
     public query func getUserVote(daoId: Principal, proposalId: ProposalId, user: Principal) : async ?Vote {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         votes.get((daoId, proposalId, user))
     };
 
     // Get all votes for a proposal
     public query func getProposalVotes(daoId: Principal, proposalId: ProposalId) : async [Vote] {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         let proposalVotes = Buffer.Buffer<Vote>(0);
         for (vote in votes.vals()) {
             if (vote.daoId == daoId and vote.proposalId == proposalId) {
@@ -520,11 +559,17 @@ persistent actor GovernanceCanister {
 
     // Get governance configuration for a DAO
     public query func getConfig(daoId: Principal) : async ?GovernanceConfig {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         config.get(daoId)
     };
 
     // Update governance configuration (admin only)
     public shared(_msg) func updateConfig(daoId: Principal, newConfig: GovernanceConfig) : async Result<(), Text> {
+        if (not initialized) {
+            return #err("Canister not initialized");
+        };
         // In a real implementation, you'd check if the caller is an admin
         config.put(daoId, newConfig);
         #ok()
@@ -549,6 +594,9 @@ persistent actor GovernanceCanister {
         failedProposals: Nat;
         totalVotes: Nat;
     } {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
         var activeCount = 0;
         var succeededCount = 0;
         var failedCount = 0;
