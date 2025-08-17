@@ -242,6 +242,7 @@ persistent actor ProposalsCanister {
             title = title;
             description = description;
             proposalType = proposalType;
+            category = category;
             status = #active;
             votesInFavor = 0;
             votesAgainst = 0;
