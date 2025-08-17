@@ -218,6 +218,7 @@ persistent actor GovernanceCanister {
             case (?p) p;
             case null currentConfig.votingPeriod;
         };
+        let periodInt = Int.fromNat(period);
 
         let proposal : Proposal = {
             daoId = daoId;
@@ -231,9 +232,9 @@ persistent actor GovernanceCanister {
             votesAgainst = 0;
             totalVotingPower = 0;
             createdAt = Time.now();
-            votingDeadline = Time.now() + period;
+            votingDeadline = Time.now() + periodInt;
 
-            executionDeadline = ?(Time.now() + period + (24 * 60 * 60 * 1_000_000_000));
+            executionDeadline = ?(Time.now() + periodInt + Int.fromNat(24 * 60 * 60 * 1_000_000_000));
             quorumThreshold = currentConfig.quorumThreshold;
             approvalThreshold = currentConfig.approvalThreshold;
         };
