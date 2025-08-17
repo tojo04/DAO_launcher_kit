@@ -50,7 +50,7 @@ persistent actor DAOMain {
     };
 
     private type TreasuryActor = actor {
-        listTransactions : shared query () -> async [Activity];
+        getRecentActivity : shared query () -> async [Activity];
     };
 
     private type GovernanceActor = actor {
@@ -565,7 +565,7 @@ persistent actor DAOMain {
                     case (?cid) {
                         let can : TreasuryActor = actor (Principal.toText(cid));
                         try {
-                            await can.listTransactions();
+                            await can.getRecentActivity();
                         } catch (_) { [] };
                     };
                     case null [];
@@ -640,7 +640,13 @@ persistent actor DAOMain {
         }
     };
 
-
+    /**
+     * Create a new proposal for the DAO.
+     *
+     * The proposal's type, optional category and optional voting period are
+     * passed directly to the proposals canister, allowing flexible proposal
+     * creation beyond simple text proposals.
+     */
     public shared(msg) func createProposal(
         daoId: DAOId,
         title: Text,

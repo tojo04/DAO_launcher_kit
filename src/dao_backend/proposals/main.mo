@@ -656,4 +656,58 @@ persistent actor ProposalsCanister {
             totalCategories = categories.size();
         }
     };
+
+    // Recent activity combining proposals and votes
+    public query func getRecentActivity() : async [Types.Activity] {
+        if (not initialized) {
+            throw Error.reject("Canister not initialized");
+        };
+
+        let buffer = Buffer.Buffer<Types.Activity>(0);
+
+        for (proposal in proposals.vals()) {
+            let statusText = switch (proposal.status) {
+                case (#pending) "pending";
+                case (#active) "active";
+                case (#succeeded) "succeeded";
+                case (#executed) "executed";
+                case (#failed) "failed";
+                case (#cancelled) "cancelled";
+            };
+            buffer.add({
+                activityType = "proposal";
+                title = proposal.title;
+                description = proposal.description;
+                timestamp = proposal.createdAt;
+                status = statusText;
+            });
+        };
+
+        for (vote in votes.vals()) {
+            let choiceText = switch (vote.choice) {
+                case (#inFavor) "inFavor";
+                case (#against) "against";
+                case (#abstain) "abstain";
+            };
+            buffer.add({
+                activityType = "vote";
+                title = "Vote on proposal #" # Nat.toText(vote.proposalId);
+                description = choiceText;
+                timestamp = vote.timestamp;
+                status = choiceText;
+            });
+        };
+
+        let all = Buffer.toArray(buffer);
+        let sorted = Array.sort(all, func(a: Types.Activity, b: Types.Activity) : { #less; #equal; #greater } {
+            if (a.timestamp > b.timestamp) { #less } else if (a.timestamp < b.timestamp) { #greater } else { #equal }
+        });
+
+        let limit = 20;
+        if (sorted.size() <= limit) {
+            sorted
+        } else {
+            Array.tabulate<Types.Activity>(limit, func(i) = sorted[i])
+        }
+    };
 }

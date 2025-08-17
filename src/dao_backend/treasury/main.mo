@@ -485,6 +485,49 @@ persistent actor TreasuryCanister {
         }
     };
 
+    // Convert recent transactions into activity records
+    public query func getRecentActivity() : async [Types.Activity] {
+        let txBuffer = Buffer.Buffer<TreasuryTransaction>(0);
+        for (tx in transactions.vals()) {
+            txBuffer.add(tx);
+        };
+        let allTx = Buffer.toArray(txBuffer);
+        let sortedTx = Array.sort(allTx, func(a: TreasuryTransaction, b: TreasuryTransaction) : {#less; #equal; #greater} {
+            if (a.timestamp > b.timestamp) #less
+            else if (a.timestamp < b.timestamp) #greater
+            else #equal
+        });
+
+        let limit = 20;
+        let selected = if (sortedTx.size() <= limit) {
+            sortedTx
+        } else {
+            Array.tabulate<TreasuryTransaction>(limit, func(i) = sortedTx[i])
+        };
+
+        Array.map<TreasuryTransaction, Types.Activity>(selected, func(tx) : Types.Activity {
+            let typeText = switch (tx.transactionType) {
+                case (#deposit) "deposit";
+                case (#withdrawal) "withdrawal";
+                case (#proposalExecution) "proposalExecution";
+                case (#stakingReward) "stakingReward";
+                case (#fee) "fee";
+            };
+            let statusText = switch (tx.status) {
+                case (#pending) "pending";
+                case (#completed) "completed";
+                case (#failed) "failed";
+            };
+            {
+                activityType = typeText;
+                title = typeText;
+                description = tx.description;
+                timestamp = tx.timestamp;
+                status = statusText;
+            }
+        })
+    };
+
     // Get treasury statistics
     public query func getTreasuryStats(daoId: Principal) : async {
         totalTransactions: Nat;
@@ -537,6 +580,7 @@ persistent actor TreasuryCanister {
         }
     };
 
+
     // Administrative functions
     // Configure ledger canister
     public shared(_msg) func setLedgerCanister(canister: Principal) : async Result<(), Text> {
@@ -548,9 +592,14 @@ persistent actor TreasuryCanister {
         ledgerCanister
     };
 
-    // Add authorized principal
-    public shared(_msg) func addAuthorizedPrincipal(daoId: Principal, principal: Principal) : async Result<(), Text> {
-        // In real implementation, only governance or admin should be able to do this
+  
+
+    // Add authorized principal (admin only)
+    public shared(msg) func addAuthorizedPrincipal(daoId: Principal, principal: Principal) : async Result<(), Text> {
+        if (not isAdmin(daoId, msg.caller)) {
+            return #err("Not authorized");
+        };
+
         let principals = Buffer.fromArray<Principal>(
             switch (authorizedPrincipals.get(daoId)) {
                 case (?arr) arr;
@@ -562,9 +611,11 @@ persistent actor TreasuryCanister {
         #ok()
     };
 
-    // Remove authorized principal
-    public shared(_msg) func removeAuthorizedPrincipal(daoId: Principal, principal: Principal) : async Result<(), Text> {
-        // In real implementation, only governance or admin should be able to do this
+    // Remove authorized principal (admin only)
+    public shared(msg) func removeAuthorizedPrincipal(daoId: Principal, principal: Principal) : async Result<(), Text> {
+        if (not isAdmin(daoId, msg.caller)) {
+            return #err("Not authorized");
+        };
         let updated = switch (authorizedPrincipals.get(daoId)) {
             case (?arr) Array.filter<Principal>(arr, func(p) = p != principal);
             case null [];
@@ -608,6 +659,7 @@ persistent actor TreasuryCanister {
             case null { false };
         }
     };
+
 
     private func getLedger() : Result<ICRC1.Service, Text> {
         switch (ledgerCanister) {
@@ -672,4 +724,11 @@ persistent actor TreasuryCanister {
             case null { #err("Transaction not found") };
         }
     };
+=======
+    private func isAdmin(daoId: Principal, principal: Principal) : Bool {
+        // For now, reuse the authorized principal list for admin checks
+        isAuthorized(daoId, principal)
+    };
+
+  
 }
