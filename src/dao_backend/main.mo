@@ -7,6 +7,7 @@ import Debug "mo:base/Debug";
 import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Array "mo:base/Array";
+import Order "mo:base/Order";
 
 import Types "shared/types";
 
@@ -37,6 +38,23 @@ persistent actor DAOMain {
     type DAOConfig = Types.DAOConfig;
     type Activity = Types.Activity;
     type DAOId = Types.DAOId;
+
+    // Actor interfaces for external DAO modules
+    private type ProposalsActor = actor {
+        getRecentActivity : shared query () -> async [Activity];
+    };
+
+    private type StakingActor = actor {
+        getRecentActivity : shared query () -> async [Activity];
+    };
+
+    private type TreasuryActor = actor {
+        listTransactions : shared query () -> async [Activity];
+    };
+
+    private type GovernanceActor = actor {
+        getRecentActivity : shared query () -> async [Activity];
+    };
 
     // Stable storage for upgrades - persisted per DAO
     private type DAOStable = {
@@ -519,10 +537,65 @@ persistent actor DAOMain {
     };
 
     // Recent activity
-    public query func getRecentActivity() : async [Activity] {
-        // This function will aggregate recent activity from various DAO modules.
-        // For now, return an empty list as a placeholder implementation.
-        []
+    public shared query func getRecentActivity(daoId: DAOId) : async [Activity] {
+        switch (daoStates.get(daoId)) {
+            case (?state) {
+                let proposalsActivity : [Activity] = switch (state.proposalsCanister) {
+                    case (?cid) {
+                        let can : ProposalsActor = actor (Principal.toText(cid));
+                        try {
+                            await can.getRecentActivity();
+                        } catch (_) { [] };
+                    };
+                    case null [];
+                };
+
+                let stakingActivity : [Activity] = switch (state.stakingCanister) {
+                    case (?cid) {
+                        let can : StakingActor = actor (Principal.toText(cid));
+                        try {
+                            await can.getRecentActivity();
+                        } catch (_) { [] };
+                    };
+                    case null [];
+                };
+
+                let treasuryActivity : [Activity] = switch (state.treasuryCanister) {
+                    case (?cid) {
+                        let can : TreasuryActor = actor (Principal.toText(cid));
+                        try {
+                            await can.listTransactions();
+                        } catch (_) { [] };
+                    };
+                    case null [];
+                };
+
+                let governanceActivity : [Activity] = switch (state.governanceCanister) {
+                    case (?cid) {
+                        let can : GovernanceActor = actor (Principal.toText(cid));
+                        try {
+                            await can.getRecentActivity();
+                        } catch (_) { [] };
+                    };
+                    case null [];
+                };
+
+                var combined = Array.append<Activity>(proposalsActivity, stakingActivity);
+                combined := Array.append<Activity>(combined, treasuryActivity);
+                combined := Array.append<Activity>(combined, governanceActivity);
+
+                Array.sort<Activity>(combined, func (a : Activity, b : Activity) : Order.Order {
+                    if (a.timestamp > b.timestamp) {
+                        #less
+                    } else if (a.timestamp < b.timestamp) {
+                        #greater
+                    } else {
+                        #equal
+                    }
+                })
+            };
+            case null [];
+        }
     };
 
 
