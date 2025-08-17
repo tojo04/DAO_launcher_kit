@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [authClient, setAuthClient] = useState(null);
   const [identity, setIdentity] = useState(null);
+  const [error, setError] = useState(null);
 
 
 
@@ -63,12 +64,14 @@ export const AuthProvider = ({ children }) => {
 
     try {
       setLoading(true);
-      
-      const identityProvider = import.meta.env.VITE_DFX_NETWORK === "ic" 
+      setError(null);
+
+      const identityProvider = import.meta.env.VITE_DFX_NETWORK === "ic"
         ? "https://identity.ic0.app"
         : `http://${import.meta.env.VITE_CANISTER_ID_INTERNET_IDENTITY}.localhost:4943`;
 
 
+      let loginError = null;
       await authClient.login({
         identityProvider,
         onSuccess: async () => {
@@ -91,12 +94,16 @@ export const AuthProvider = ({ children }) => {
         },
 
 
-        onError: (error) => {
-          console.error("Login failed:", error);
-          setLoading(false);
-          throw error;
+        onError: (err) => {
+          console.error("Login failed:", err);
+          setError(err);
+          loginError = err;
         },
       });
+
+      if (loginError) {
+        throw loginError;
+      }
       
       return true;
     } catch (error) {
@@ -137,6 +144,7 @@ export const AuthProvider = ({ children }) => {
     principal,
     userSettings,
     loading,
+    error,
     login,
     logout,
     authClient,
