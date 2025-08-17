@@ -76,7 +76,9 @@ persistent actor AssetCanister {
     };
 
     private func assetKeyHash(k: AssetKey) : Nat32 {
-        Nat32.xor(Text.hash(k.daoId), Nat32.fromNat(k.assetId))
+        let daoHash = Text.hash(k.daoId);
+        let assetIdHash = Nat32.fromNat(k.assetId);
+        daoHash + assetIdHash
     };
 
     private type UploaderKey = {
@@ -89,7 +91,9 @@ persistent actor AssetCanister {
     };
 
     private func uploaderKeyHash(k: UploaderKey) : Nat32 {
-        Nat32.xor(Text.hash(k.daoId), Principal.hash(k.uploader))
+        let daoHash = Text.hash(k.daoId);
+        let uploaderHash = Principal.hash(k.uploader);
+        daoHash + uploaderHash
     };
 
     private transient var assets = HashMap.HashMap<AssetKey, Asset>(100, assetKeyEqual, assetKeyHash);

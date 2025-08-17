@@ -10,7 +10,13 @@ import { initializeAgents, type Actors } from "../config/agent";
 import { useAuth } from "./AuthContext";
 import { useDAOManagement } from "./DAOManagementContext";
 
-const ActorContext = createContext<Actors | null>(null);
+interface ActorContextType {
+  actors: Actors | null;
+  loading: boolean;
+  error: string | null;
+}
+
+const ActorContext = createContext<ActorContextType | null>(null);
 
 interface ActorProviderProps {
   children: ReactNode;
@@ -27,6 +33,7 @@ export const ActorProvider = ({ children }: ActorProviderProps) => {
     const setup = async () => {
       if (!selectedDAO) {
         setActors(null);
+        setLoading(false);
         return;
       }
       setLoading(true);
@@ -57,20 +64,8 @@ export const ActorProvider = ({ children }: ActorProviderProps) => {
   }, [identity, selectedDAO, daoActors, setActorsForDAO]);
 
   return (
-    <ActorContext.Provider value={actors}>
-      {loading ? (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
-        </div>
-      ) : error ? (
-        <div className="flex flex-col items-center justify-center min-h-screen text-red-600 p-4 text-center">
-          <h1 className="text-xl font-bold mb-2">Configuration Error</h1>
-          <p className="mb-2">{error}</p>
-          <p>Please verify your environment configuration and canister IDs.</p>
-        </div>
-      ) : (
-        children
-      )}
+    <ActorContext.Provider value={{ actors, loading, error }}>
+      {children}
     </ActorContext.Provider>
   );
 };
@@ -78,6 +73,15 @@ export const ActorProvider = ({ children }: ActorProviderProps) => {
 export const useActors = () => {
   const context = useContext(ActorContext);
   // Don't throw error during loading phase, allow null context
-  return context;
+  return context?.actors || null;
+};
+
+export const useActorState = () => {
+  const context = useContext(ActorContext);
+  return {
+    actors: context?.actors || null,
+    loading: context?.loading || false,
+    error: context?.error || null
+  };
 };
 

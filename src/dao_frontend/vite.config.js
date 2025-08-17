@@ -52,7 +52,8 @@ export default defineConfig(({ command, mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
-        '@declarations': path.resolve(__dirname, './src/declarations'),
+        '@declarations': path.resolve(__dirname, '../declarations'),
+        '@projectDeclarations': path.resolve(__dirname, '../../declarations'),
       },
     },
     test: {

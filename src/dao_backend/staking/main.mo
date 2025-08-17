@@ -64,7 +64,9 @@ persistent actor StakingCanister {
         Principal.equal(a.0, b.0) and Nat.equal(a.1, b.1)
     };
     private func stakeKeyHash(k: (Principal, StakeId)) : Nat32 {
-        Nat32.xor(Principal.hash(k.0), Nat32.fromNat(k.1))
+        let principalHash = Principal.hash(k.0);
+        let stakeIdHash = Nat32.fromNat(k.1);
+        principalHash + stakeIdHash
     };
     private transient var stakes = HashMap.HashMap<(Principal, StakeId), Stake>(100, stakeKeyEqual, stakeKeyHash);
     private transient var userStakes = HashMap.HashMap<Principal, HashMap.HashMap<Principal, [StakeId]>>(50, Principal.equal, Principal.hash);
@@ -85,7 +87,7 @@ persistent actor StakingCanister {
     system func preupgrade() {
         stakesEntries := Iter.toArray(stakes.entries());
         userStakesEntries := Iter.toArray(
-            Iter.map(userStakes.entries(), func ((user, daoMap)) {
+            Iter.map<(Principal, HashMap.HashMap<Principal, [StakeId]>), (Principal, [(Principal, [StakeId])])>(userStakes.entries(), func ((user, daoMap)) {
                 (user, Iter.toArray(daoMap.entries()))
             })
         );

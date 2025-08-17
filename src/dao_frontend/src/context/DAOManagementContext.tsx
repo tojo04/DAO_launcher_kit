@@ -21,15 +21,42 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
     setLoading(true);
     setError(null);
     try {
-      const registryUrl = import.meta.env.VITE_DAO_REGISTRY_URL || '/api/dao-registry';
-      const response = await fetch(registryUrl);
-      const data = await response.json();
-      const registryDAOs = Array.isArray(data)
-        ? data.map((dao: any) => ({ ...dao, createdAt: new Date(dao.createdAt) }))
-        : [];
+      // Create a default DAO using the deployed canister IDs from environment
+      const defaultDAO: DAO = {
+        id: 'local-dao-1',
+        name: 'Local Development DAO',
+        description: 'A DAO for local development and testing',
+        tokenSymbol: 'LDAO',
+        memberCount: 1,
+        totalValueLocked: '0',
+        createdAt: new Date(),
+        category: 'Development',
+        status: 'active',
+        governance: {
+          totalProposals: 0,
+          activeProposals: 0,
+        },
+        treasury: {
+          balance: '0',
+          monthlyInflow: '0',
+        },
+        staking: {
+          totalStaked: '0',
+          apr: '0%',
+        },
+        canisterIds: {
+          daoBackend: import.meta.env.VITE_CANISTER_ID_DAO_BACKEND,
+          governance: import.meta.env.VITE_CANISTER_ID_GOVERNANCE,
+          staking: import.meta.env.VITE_CANISTER_ID_STAKING,
+          treasury: import.meta.env.VITE_CANISTER_ID_TREASURY,
+          proposals: import.meta.env.VITE_CANISTER_ID_PROPOSALS,
+          assets: import.meta.env.VITE_CANISTER_ID_ASSETS,
+        },
+      };
 
-      let allDAOs = registryDAOs;
+      let allDAOs = [defaultDAO];
 
+      // Also check for stored DAOs from localStorage
       if (principal) {
         const storedDAOs = localStorage.getItem(`user_daos_${principal}`);
         if (storedDAOs) {
@@ -37,7 +64,7 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
             ...dao,
             createdAt: new Date(dao.createdAt),
           }));
-          allDAOs = [...registryDAOs, ...userDAOs];
+          allDAOs = [defaultDAO, ...userDAOs];
         }
       }
 
@@ -46,8 +73,8 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
         setSelectedDAO(allDAOs[0]);
       }
     } catch (err) {
-      setError('Failed to fetch DAOs');
-      console.error('Error fetching DAOs:', err);
+      setError('Failed to initialize DAOs');
+      console.error('Error initializing DAOs:', err);
     } finally {
       setLoading(false);
     }

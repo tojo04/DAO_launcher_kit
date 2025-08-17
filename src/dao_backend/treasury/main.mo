@@ -16,31 +16,6 @@ import Blob "mo:base/Blob";
 
 import Types "../shared/types";
 
-module ICRC1 {
-    public type Account = { owner: Principal; subaccount: ?[Nat8] };
-    public type TransferArgs = {
-        from_subaccount: ?[Nat8];
-        to: Account;
-        amount: Nat;
-        fee: ?Nat;
-        memo: ?Blob;
-        created_at_time: ?Nat64;
-    };
-    public type TransferError = {
-        #BadFee: { expected_fee: Nat };
-        #InsufficientFunds: { balance: Nat };
-        #TxTooOld: { allowed_window_nanos: Nat64 };
-        #TxCreatedInFuture: { ledger_time: Nat64 };
-        #TxDuplicate: { duplicate_of: Nat };
-        #BadBurn: { min_burn_amount: Nat };
-        #GenericError: { error_code: Nat; message: Text };
-    };
-    public type TransferResult = { #Ok: Nat; #Err: TransferError };
-    public type Service = actor {
-        icrc1_transfer: TransferArgs -> async TransferResult;
-    };
-};
-
 /**
  * Treasury Canister
  * 
@@ -63,6 +38,35 @@ module ICRC1 {
  * - Emergency pause functionality for security incidents
  */
 persistent actor TreasuryCanister {
+    // Helper function for safe Nat subtraction
+    private func safeSub(a: Nat, b: Nat) : Nat {
+        if (a >= b) { a - b } else { 0 }
+    };
+
+    // ICRC1 module definitions
+    public type ICRC1Account = { owner: Principal; subaccount: ?[Nat8] };
+    public type ICRC1TransferArgs = {
+        from_subaccount: ?[Nat8];
+        to: ICRC1Account;
+        amount: Nat;
+        fee: ?Nat;
+        memo: ?Blob;
+        created_at_time: ?Nat64;
+    };
+    public type ICRC1TransferError = {
+        #BadFee: { expected_fee: Nat };
+        #InsufficientFunds: { balance: Nat };
+        #TxTooOld: { allowed_window_nanos: Nat64 };
+        #TxCreatedInFuture: { ledger_time: Nat64 };
+        #TxDuplicate: { duplicate_of: Nat };
+        #BadBurn: { min_burn_amount: Nat };
+        #GenericError: { error_code: Nat; message: Text };
+    };
+    public type ICRC1TransferResult = { #Ok: Nat; #Err: ICRC1TransferError };
+    public type ICRC1Service = actor {
+        icrc1_transfer: ICRC1TransferArgs -> async ICRC1TransferResult;
+    };
+
     // Type aliases for improved code readability
     type Result<T, E> = Result.Result<T, E>;
     type TreasuryBalance = Types.TreasuryBalance;
@@ -136,7 +140,7 @@ persistent actor TreasuryCanister {
             case (#err(e)) { return #err(e) };
         };
 
-        let transferArgs : ICRC1.TransferArgs = {
+        let transferArgs : ICRC1TransferArgs = {
             from_subaccount = null;
             to = { owner = Principal.fromActor(TreasuryCanister); subaccount = null };
             amount = amount;
@@ -237,8 +241,10 @@ persistent actor TreasuryCanister {
         // Execute withdrawal
         switch (await executeWithdrawal(transactionId)) {
             case (#ok(_)) {
-                // Update balances
-                balances.put(daoId, { bal with total = bal.total - amount; available = bal.available - amount });
+                // Update balances (safe subtraction after validation)
+                let newTotal = safeSub(bal.total, amount);
+                let newAvailable = safeSub(bal.available, amount);
+                balances.put(daoId, { bal with total = newTotal; available = newAvailable });
                 
                 let completedTransaction = {
                     daoId = transaction.daoId;
@@ -287,7 +293,7 @@ persistent actor TreasuryCanister {
             return #err("Insufficient available balance");
         };
 
-        balances.put(daoId, { bal with available = bal.available - amount; locked = bal.locked + amount });
+        balances.put(daoId, { bal with available = safeSub(bal.available, amount); locked = bal.locked + amount });
 
         let transactionId = nextTransactionId;
         nextTransactionId += 1;
@@ -322,7 +328,7 @@ persistent actor TreasuryCanister {
             return #err("Insufficient locked balance");
         };
 
-        balances.put(daoId, { bal with locked = bal.locked - amount; available = bal.available + amount });
+        balances.put(daoId, { bal with locked = safeSub(bal.locked, amount); available = bal.available + amount });
 
         let transactionId = nextTransactionId;
         nextTransactionId += 1;
@@ -357,7 +363,7 @@ persistent actor TreasuryCanister {
             return #err("Insufficient available balance");
         };
 
-        balances.put(daoId, { bal with available = bal.available - amount; reserved = bal.reserved + amount });
+        balances.put(daoId, { bal with available = safeSub(bal.available, amount); reserved = bal.reserved + amount });
 
         let transactionId = nextTransactionId;
         nextTransactionId += 1;
@@ -392,7 +398,7 @@ persistent actor TreasuryCanister {
             return #err("Insufficient reserved balance");
         };
 
-        balances.put(daoId, { bal with reserved = bal.reserved - amount; available = bal.available + amount });
+        balances.put(daoId, { bal with reserved = safeSub(bal.reserved, amount); available = bal.available + amount });
 
         let transactionId = nextTransactionId;
         nextTransactionId += 1;
@@ -624,7 +630,7 @@ persistent actor TreasuryCanister {
             case null [];
         };
         if (updated.size() == 0) {
-            authorizedPrincipals.remove(daoId);
+            ignore authorizedPrincipals.remove(daoId);
         } else {
             authorizedPrincipals.put(daoId, updated);
         };
@@ -664,14 +670,14 @@ persistent actor TreasuryCanister {
     };
 
 
-    private func getLedger() : Result<ICRC1.Service, Text> {
+    private func getLedger() : Result<ICRC1Service, Text> {
         switch (ledgerCanister) {
-            case (?p) { #ok(actor(Principal.toText(p)) : ICRC1.Service) };
+            case (?p) { #ok(actor(Principal.toText(p)) : ICRC1Service) };
             case null { #err("Ledger canister not configured") };
         }
     };
 
-    private func transferErrorToText(e: ICRC1.TransferError) : Text {
+    private func transferErrorToText(e: ICRC1TransferError) : Text {
         switch (e) {
             case (#BadFee { expected_fee }) {
                 "Bad fee: expected " # Nat.toText(expected_fee)
@@ -708,7 +714,7 @@ persistent actor TreasuryCanister {
 
                 switch (tx.to) {
                     case (?recipient) {
-                        let args : ICRC1.TransferArgs = {
+                        let args : ICRC1TransferArgs = {
                             from_subaccount = null;
                             to = { owner = recipient; subaccount = null };
                             amount = tx.amount;

@@ -65,23 +65,26 @@ persistent actor GovernanceCanister {
 
     // Inter-canister communication setup
     // Actor reference for staking canister
-
-    var staking : ?actor {
+    private type StakingCanister = actor {
         getUserStakingSummary: shared query (Principal, Principal) -> async {
             totalStaked: Nat;
             totalRewards: Nat;
             activeStakes: Nat;
             totalVotingPower: Nat;
         };
-    } = null;
+    };
+
+    var staking : ?StakingCanister = null;
 
     // Inter-canister communication setup
 
     // These actor references enable cross-canister calls for governance functionality
-    var dao : ?actor {
+    private type DAOCanister = actor {
         getUserProfile: shared query (Types.DAOId, Principal) -> async ?Types.UserProfile;
         checkIsAdmin: shared query (Types.DAOId, Principal) -> async Bool;
-    } = null;
+    };
+    
+    var dao : ?DAOCanister = null;
 
     // Stable storage for upgrade persistence
     // These arrays store serialized data that survives canister upgrades
@@ -233,7 +236,7 @@ persistent actor GovernanceCanister {
             case (?p) p;
             case null currentConfig.votingPeriod;
         };
-        let periodInt = Int.fromNat(period);
+        let periodInt = period;
 
         let proposal : Proposal = {
             daoId = daoId;
@@ -242,14 +245,14 @@ persistent actor GovernanceCanister {
             title = title;
             description = description;
             proposalType = proposalType;
+            category = null; // Default to no category
             status = #active;
             votesInFavor = 0;
             votesAgainst = 0;
             totalVotingPower = 0;
             createdAt = Time.now();
             votingDeadline = Time.now() + periodInt;
-
-            executionDeadline = ?(Time.now() + periodInt + Int.fromNat(24 * 60 * 60 * 1_000_000_000));
+            executionDeadline = ?(Time.now() + periodInt + (24 * 60 * 60 * 1_000_000_000)); // 1 day after voting
             quorumThreshold = currentConfig.quorumThreshold;
             approvalThreshold = currentConfig.approvalThreshold;
         };
@@ -338,61 +341,20 @@ persistent actor GovernanceCanister {
         // Update proposal vote counts
         let updatedProposal = switch (choice) {
             case (#inFavor) {
-
-                {
-                    daoId = proposal.daoId;
-                    id = proposal.id;
-                    proposer = proposal.proposer;
-                    title = proposal.title;
-                    description = proposal.description;
-                    proposalType = proposal.proposalType;
-                    status = proposal.status;
+                { proposal with 
                     votesInFavor = proposal.votesInFavor + votingPower;
-                    votesAgainst = proposal.votesAgainst;
                     totalVotingPower = proposal.totalVotingPower + votingPower;
-                    createdAt = proposal.createdAt;
-                    votingDeadline = proposal.votingDeadline;
-                    executionDeadline = proposal.executionDeadline;
-                    quorumThreshold = proposal.quorumThreshold;
-                    approvalThreshold = proposal.approvalThreshold;
                 }
             };
             case (#against) {
-                {
-                    daoId = proposal.daoId;
-                    id = proposal.id;
-                    proposer = proposal.proposer;
-                    title = proposal.title;
-                    description = proposal.description;
-                    proposalType = proposal.proposalType;
-                    status = proposal.status;
-                    votesInFavor = proposal.votesInFavor;
+                { proposal with 
                     votesAgainst = proposal.votesAgainst + votingPower;
                     totalVotingPower = proposal.totalVotingPower + votingPower;
-                    createdAt = proposal.createdAt;
-                    votingDeadline = proposal.votingDeadline;
-                    executionDeadline = proposal.executionDeadline;
-                    quorumThreshold = proposal.quorumThreshold;
-                    approvalThreshold = proposal.approvalThreshold;
                 }
             };
             case (#abstain) {
-                {
-                    daoId = proposal.daoId;
-                    id = proposal.id;
-                    proposer = proposal.proposer;
-                    title = proposal.title;
-                    description = proposal.description;
-                    proposalType = proposal.proposalType;
-                    status = proposal.status;
-                    votesInFavor = proposal.votesInFavor;
-                    votesAgainst = proposal.votesAgainst;
+                { proposal with 
                     totalVotingPower = proposal.totalVotingPower + votingPower;
-                    createdAt = proposal.createdAt;
-                    votingDeadline = proposal.votingDeadline;
-                    executionDeadline = proposal.executionDeadline;
-                    quorumThreshold = proposal.quorumThreshold;
-                    approvalThreshold = proposal.approvalThreshold;
                 }
             };
         };
@@ -424,23 +386,7 @@ persistent actor GovernanceCanister {
 
         // Check quorum
         if (proposal.totalVotingPower < proposal.quorumThreshold) {
-            let failedProposal = {
-                daoId = proposal.daoId;
-                id = proposal.id;
-                proposer = proposal.proposer;
-                title = proposal.title;
-                description = proposal.description;
-                proposalType = proposal.proposalType;
-                status = #failed;
-                votesInFavor = proposal.votesInFavor;
-                votesAgainst = proposal.votesAgainst;
-                totalVotingPower = proposal.totalVotingPower;
-                createdAt = proposal.createdAt;
-                votingDeadline = proposal.votingDeadline;
-                executionDeadline = proposal.executionDeadline;
-                quorumThreshold = proposal.quorumThreshold;
-                approvalThreshold = proposal.approvalThreshold;
-            };
+            let failedProposal = { proposal with status = #failed };
 
             proposals.put((daoId, proposalId), failedProposal);
             return #err("Quorum not met");
@@ -457,46 +403,14 @@ persistent actor GovernanceCanister {
             #failed
         };
 
-        let updatedProposal = {
-            daoId = proposal.daoId;
-            id = proposal.id;
-            proposer = proposal.proposer;
-            title = proposal.title;
-            description = proposal.description;
-            proposalType = proposal.proposalType;
-            status = newStatus;
-            votesInFavor = proposal.votesInFavor;
-            votesAgainst = proposal.votesAgainst;
-            totalVotingPower = proposal.totalVotingPower;
-            createdAt = proposal.createdAt;
-            votingDeadline = proposal.votingDeadline;
-            executionDeadline = proposal.executionDeadline;
-            quorumThreshold = proposal.quorumThreshold;
-            approvalThreshold = proposal.approvalThreshold;
-        };
+        let updatedProposal = { proposal with status = newStatus };
 
         proposals.put((daoId, proposalId), updatedProposal);
 
         if (newStatus == #succeeded) {
             // Here you would implement the actual execution logic
             // For now, we just mark it as executed
-            let executedProposal = {
-                daoId = updatedProposal.daoId;
-                id = updatedProposal.id;
-                proposer = updatedProposal.proposer;
-                title = updatedProposal.title;
-                description = updatedProposal.description;
-                proposalType = updatedProposal.proposalType;
-                status = #executed;
-                votesInFavor = updatedProposal.votesInFavor;
-                votesAgainst = updatedProposal.votesAgainst;
-                totalVotingPower = updatedProposal.totalVotingPower;
-                createdAt = updatedProposal.createdAt;
-                votingDeadline = updatedProposal.votingDeadline;
-                executionDeadline = updatedProposal.executionDeadline;
-                quorumThreshold = updatedProposal.quorumThreshold;
-                approvalThreshold = updatedProposal.approvalThreshold;
-            };
+            let executedProposal = { updatedProposal with status = #executed };
 
             proposals.put((daoId, proposalId), executedProposal);
         };

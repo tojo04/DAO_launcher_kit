@@ -66,14 +66,16 @@ persistent actor ProposalsCanister {
     private transient var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
 
     // Inter-canister reference to staking for voting power
-    var staking : ?actor {
+    private type StakingCanister = actor {
         getUserStakingSummary: shared query (Principal, Principal) -> async {
             totalStaked: Nat;
             totalRewards: Nat;
             activeStakes: Nat;
             totalVotingPower: Nat;
         };
-    } = null;
+    };
+    
+    var staking : ?StakingCanister = null;
 
     // Initialize default data
     private func initializeDefaults() {
@@ -234,7 +236,7 @@ persistent actor ProposalsCanister {
             case (?p) p;
             case null currentConfig.votingPeriod;
         };
-        let periodInt = Int.fromNat(period);
+        let periodInt = period;
 
         let proposal : Proposal = {
             daoId = Principal.fromText(daoId);
@@ -250,7 +252,7 @@ persistent actor ProposalsCanister {
             totalVotingPower = 0;
             createdAt = Time.now();
             votingDeadline = Time.now() + periodInt;
-            executionDeadline = ?(Time.now() + periodInt + Int.fromNat(24 * 60 * 60 * 1_000_000_000)); // 1 day after voting
+            executionDeadline = ?(Time.now() + periodInt + (24 * 60 * 60 * 1_000_000_000)); // 1 day after voting
             quorumThreshold = currentConfig.quorumThreshold;
             approvalThreshold = currentConfig.approvalThreshold;
         };
@@ -392,6 +394,7 @@ persistent actor ProposalsCanister {
                     title = proposal.title;
                     description = proposal.description;
                     proposalType = proposal.proposalType;
+                    category = proposal.category;
                     status = proposal.status;
                     votesInFavor = proposal.votesInFavor + votingPower;
                     votesAgainst = proposal.votesAgainst;
@@ -411,6 +414,7 @@ persistent actor ProposalsCanister {
                     title = proposal.title;
                     description = proposal.description;
                     proposalType = proposal.proposalType;
+                    category = proposal.category;
                     status = proposal.status;
                     votesInFavor = proposal.votesInFavor;
                     votesAgainst = proposal.votesAgainst + votingPower;
@@ -430,6 +434,7 @@ persistent actor ProposalsCanister {
                     title = proposal.title;
                     description = proposal.description;
                     proposalType = proposal.proposalType;
+                    category = proposal.category;
                     status = proposal.status;
                     votesInFavor = proposal.votesInFavor;
                     votesAgainst = proposal.votesAgainst;

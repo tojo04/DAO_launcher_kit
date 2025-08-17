@@ -59,10 +59,25 @@ dfx generate proposals
 dfx generate assets
 dfx generate internet_identity
 
+# Wait a moment for file system to sync
+sleep 2
+
 # Copy declarations to frontend location for build
 echo "📋 Copying declarations to frontend location..."
 mkdir -p src/dao_frontend/src/declarations
+rm -rf src/dao_frontend/src/declarations/*
 cp -r src/declarations/* src/dao_frontend/src/declarations/
+
+# Verify critical files exist
+if [ ! -f "src/dao_frontend/src/declarations/dao_backend/dao_backend.did.js" ]; then
+    echo "❌ Critical declaration file missing, retrying copy..."
+    sleep 1
+    cp -r src/declarations/* src/dao_frontend/src/declarations/
+fi
+
+# Clear Vite cache to ensure fresh build
+echo "🧹 Clearing Vite cache..."
+rm -rf src/dao_frontend/node_modules/.vite
 
 # Build frontend with generated declarations
 echo "🔨 Building frontend..."

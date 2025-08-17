@@ -138,17 +138,17 @@ persistent actor DAOMain {
                 adminMap.put(admin, true);
             };
             daoStates.put(id, {
-                initialized = stableState.initialized;
-                daoName = stableState.name;
-                daoDescription = stableState.description;
-                totalMembers = stableState.totalMembers;
-                userProfiles = userMap;
-                adminPrincipals = adminMap;
-                daoConfig = stableState.daoConfig;
-                governanceCanister = stableState.governanceCanister;
-                stakingCanister = stableState.stakingCanister;
-                treasuryCanister = stableState.treasuryCanister;
-                proposalsCanister = stableState.proposalsCanister;
+                var initialized = stableState.initialized;
+                var daoName = stableState.name;
+                var daoDescription = stableState.description;
+                var totalMembers = stableState.totalMembers;
+                var userProfiles = userMap;
+                var adminPrincipals = adminMap;
+                var daoConfig = stableState.daoConfig;
+                var governanceCanister = stableState.governanceCanister;
+                var stakingCanister = stableState.stakingCanister;
+                var treasuryCanister = stableState.treasuryCanister;
+                var proposalsCanister = stableState.proposalsCanister;
             });
         };
     };
@@ -187,17 +187,17 @@ persistent actor DAOMain {
             };
             case null {
                 let newState : DAOState = {
-                    initialized = false;
-                    daoName = "";
-                    daoDescription = "";
-                    totalMembers = 0;
-                    userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
-                    adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
-                    daoConfig = null;
-                    governanceCanister = null;
-                    stakingCanister = null;
-                    treasuryCanister = null;
-                    proposalsCanister = null;
+                    var initialized = false;
+                    var daoName = "";
+                    var daoDescription = "";
+                    var totalMembers = 0;
+                    var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
+                    var adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
+                    var daoConfig = null;
+                    var governanceCanister = null;
+                    var stakingCanister = null;
+                    var treasuryCanister = null;
+                    var proposalsCanister = null;
                 };
                 daoStates.put(daoId, newState);
                 newState
@@ -436,7 +436,7 @@ persistent actor DAOMain {
         }
     };
 
-    public shared query func getDAOStats(daoId: DAOId) : async DAOStats {
+    public shared func getDAOStats(daoId: DAOId) : async DAOStats {
         switch (daoStates.get(daoId)) {
             case (?state) {
                 let daoPrincipal = Principal.fromText(daoId);
@@ -538,7 +538,7 @@ persistent actor DAOMain {
     };
 
     // Recent activity
-    public shared query func getRecentActivity(daoId: DAOId) : async [Activity] {
+    public shared func getRecentActivity(daoId: DAOId) : async [Activity] {
         switch (daoStates.get(daoId)) {
             case (?state) {
                 let proposalsActivity : [Activity] = switch (state.proposalsCanister) {
@@ -613,7 +613,7 @@ persistent actor DAOMain {
         getGovernanceStats: shared query (Principal) -> async GovernanceStats;
     };
 
-    public shared query func getGovernanceStats(daoId: DAOId) : async GovernanceStats {
+    public shared func getGovernanceStats(daoId: DAOId) : async GovernanceStats {
         let defaultStats : GovernanceStats = {
             totalProposals = 0;
             activeProposals = 0;
@@ -627,12 +627,16 @@ persistent actor DAOMain {
                 switch (state.governanceCanister) {
                     case (?govId) {
                         let governance : GovernanceCanister = actor(Principal.toText(govId));
-                        governance.getGovernanceStats(Principal.fromText(daoId))
+                        try {
+                            await governance.getGovernanceStats(Principal.fromText(daoId))
+                        } catch (_) {
+                            defaultStats
+                        }
                     };
-                    case null async { defaultStats };
+                    case null defaultStats;
                 }
             };
-            case null async { defaultStats };
+            case null defaultStats;
         }
     };
 
