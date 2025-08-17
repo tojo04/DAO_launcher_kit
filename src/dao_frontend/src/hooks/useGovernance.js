@@ -11,9 +11,9 @@ export const useGovernance = () => {
 
   const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
 
-  const getDaoPrincipal = () => {
+  const getDaoId = () => {
     if (!activeDAO?.id) throw new Error('No active DAO selected');
-    return Principal.fromText(activeDAO.id);
+    return activeDAO.id;
   };
 
   const createProposal = async (
@@ -25,9 +25,8 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = getDaoPrincipal();
       const res = await actors.governance.createProposal(
-        daoPrincipal,
+        getDaoId(),
         title,
         description,
         proposalType,
@@ -48,9 +47,8 @@ export const useGovernance = () => {
     setError(null);
     try {
       const choiceVariant = { [choice]: null };
-      const daoPrincipal = getDaoPrincipal();
       const res = await actors.governance.vote(
-        daoPrincipal,
+        getDaoId(),
         BigInt(proposalId),
         choiceVariant,
         reason ? [reason] : []
@@ -69,8 +67,7 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = getDaoPrincipal();
-      const res = await actors.governance.getConfig(daoPrincipal);
+      const res = await actors.governance.getConfig(getDaoId());
       return res && res.length ? res[0] : null;
     } catch (err) {
       setError(err.message);
@@ -84,8 +81,7 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = getDaoPrincipal();
-      const res = await actors.governance.getGovernanceStats(daoPrincipal);
+      const res = await actors.governance.getGovernanceStats(getDaoId());
       return res;
     } catch (err) {
       setError(err.message);
@@ -99,9 +95,8 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = getDaoPrincipal();
       const res = await actors.governance.executeProposal(
-        daoPrincipal,
+        getDaoId(),
         BigInt(proposalId)
       );
       if ('err' in res) throw new Error(res.err);
@@ -118,8 +113,7 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = getDaoPrincipal();
-      return await actors.governance.getActiveProposals(daoPrincipal);
+      return await actors.governance.getActiveProposals(getDaoId());
     } catch (err) {
       setError(err.message);
       throw err;
@@ -132,8 +126,7 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = getDaoPrincipal();
-      return await actors.governance.getAllProposals(daoPrincipal);
+      return await actors.governance.getAllProposals(getDaoId());
     } catch (err) {
       setError(err.message);
       throw err;
@@ -146,9 +139,8 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = getDaoPrincipal();
       const res = await actors.governance.getProposal(
-        daoPrincipal,
+        getDaoId(),
         BigInt(proposalId)
       );
       return res && res.length ? res[0] : null;
@@ -164,9 +156,8 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = getDaoPrincipal();
       return await actors.governance.getProposalVotes(
-        daoPrincipal,
+        getDaoId(),
         BigInt(proposalId)
       );
     } catch (err) {
@@ -182,9 +173,8 @@ export const useGovernance = () => {
     setError(null);
     try {
       const statusVariant = { [status]: null };
-      const daoPrincipal = getDaoPrincipal();
       return await actors.governance.getProposalsByStatus(
-        daoPrincipal,
+        getDaoId(),
         statusVariant
       );
     } catch (err) {
@@ -199,10 +189,9 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = getDaoPrincipal();
       const userPrincipal = Principal.fromText(user);
       const res = await actors.governance.getUserVote(
-        daoPrincipal,
+        getDaoId(),
         BigInt(proposalId),
         userPrincipal
       );
@@ -219,9 +208,8 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const daoPrincipal = getDaoPrincipal();
       const res = await actors.governance.updateConfig(
-        daoPrincipal,
+        getDaoId(),
         newConfig
       );
       if ('err' in res) throw new Error(res.err);
