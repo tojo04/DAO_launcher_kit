@@ -234,6 +234,7 @@ persistent actor ProposalsCanister {
             case (?p) p;
             case null currentConfig.votingPeriod;
         };
+        let periodInt = Int.fromNat(period);
 
         let proposal : Proposal = {
             daoId = Principal.fromText(daoId);
@@ -248,8 +249,8 @@ persistent actor ProposalsCanister {
             votesAgainst = 0;
             totalVotingPower = 0;
             createdAt = Time.now();
-            votingDeadline = Time.now() + period;
-            executionDeadline = ?(Time.now() + period + (24 * 60 * 60 * 1_000_000_000)); // 1 day after voting
+            votingDeadline = Time.now() + periodInt;
+            executionDeadline = ?(Time.now() + periodInt + Int.fromNat(24 * 60 * 60 * 1_000_000_000)); // 1 day after voting
             quorumThreshold = currentConfig.quorumThreshold;
             approvalThreshold = currentConfig.approvalThreshold;
         };
