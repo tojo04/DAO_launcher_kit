@@ -11,7 +11,6 @@ import Diagnostics from './components/Diagnostics';
 import Navbar from './components/Navbar';
 import UserRegistrationHandler from './components/UserRegistrationHandler';
 import ErrorBoundary from './components/ErrorBoundary';
-import { DAOManagementProvider } from './context/DAOManagementContext';
 import Overview from './components/management/Overview';
 import ManagementGovernance from './components/management/ManagementGovernance';
 import ManagementStaking from './components/management/ManagementStaking';
@@ -25,33 +24,31 @@ function App() {
   
   return (
     <ErrorBoundary>
-      <DAOManagementProvider>
-        <Router>
-          <UserRegistrationHandler />
-          <div className="App">
-            <Navbar />
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/dashboard" element={<DAODashboard />} />
-              <Route path="/status" element={<DAOStatus />} />
-              <Route path="/admin/diagnostics" element={<Diagnostics />} />
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/launch" element={<LaunchDAO />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/dao/:daoId/manage" element={<DAOManagement />}>
-                <Route index element={<Overview />} />
-                <Route path="overview" element={<Overview />} />
-                <Route path="governance" element={<ManagementGovernance />} />
-                <Route path="staking" element={<ManagementStaking />} />
-                <Route path="treasury" element={<ManagementTreasury />} />
-                <Route path="proposals" element={<ManagementProposals />} />
-                <Route path="assets" element={<ManagementAssets />} />
-                <Route path="admins" element={<ManagementAdmins />} />
-              </Route>
-            </Routes>
-          </div>
-        </Router>
-      </DAOManagementProvider>
+      <Router>
+        <UserRegistrationHandler />
+        <div className="App">
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/dashboard" element={<DAODashboard />} />
+            <Route path="/status" element={<DAOStatus />} />
+            <Route path="/admin/diagnostics" element={<Diagnostics />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/launch" element={<LaunchDAO />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/dao/:daoId/manage" element={<DAOManagement />}> 
+              <Route index element={<Overview />} />
+              <Route path="overview" element={<Overview />} />
+              <Route path="governance" element={<ManagementGovernance />} />
+              <Route path="staking" element={<ManagementStaking />} />
+              <Route path="treasury" element={<ManagementTreasury />} />
+              <Route path="proposals" element={<ManagementProposals />} />
+              <Route path="assets" element={<ManagementAssets />} />
+              <Route path="admins" element={<ManagementAdmins />} />
+            </Route>
+          </Routes>
+        </div>
+      </Router>
     </ErrorBoundary>
   );
 }

@@ -77,11 +77,11 @@ const ManagementTreasury: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const bal = await getBalance();
+      const bal = await getBalance(dao.id);
       setBalance(bal);
-      const s = await getTreasuryStats();
+      const s = await getTreasuryStats(dao.id);
       setStats(s);
-      const txs = await getAllTransactions();
+      const txs = await getAllTransactions(dao.id);
       const formatted = txs.map((tx: any) => {
         const isInflow =
           'deposit' in tx.transactionType || 'stakingReward' in tx.transactionType;
@@ -104,14 +104,14 @@ const ManagementTreasury: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [dao.id]);
 
   const handleDeposit = async () => {
     const amount = prompt('Enter deposit amount');
     if (!amount) return;
     const description = prompt('Enter description') || '';
     try {
-      await deposit(amount, description);
+      await deposit(dao.id, amount, description);
       await fetchData();
     } catch (e) {
       console.error(e);
@@ -124,7 +124,7 @@ const ManagementTreasury: React.FC = () => {
     if (!recipient || !amount) return;
     const description = prompt('Enter description') || '';
     try {
-      await withdraw(recipient, amount, description);
+      await withdraw(dao.id, recipient, amount, description);
       await fetchData();
     } catch (e) {
       console.error(e);

@@ -8,8 +8,8 @@ actor {
         let admin = Principal.fromActor(this);
 
         let daoStub = actor {
-            public shared query func getUserProfile(_: Principal) -> async ?Types.UserProfile { null };
-            public query func checkIsAdmin(p: Principal) : async Bool { p == admin };
+            public shared query func getUserProfile(_: Types.DAOId, _: Principal) -> async ?Types.UserProfile { null };
+            public query func checkIsAdmin(_: Types.DAOId, p: Principal) : async Bool { p == admin };
         };
         let stakingStub = actor {
             public shared query func getUserStakingSummary(_: Principal) -> async {
@@ -22,12 +22,12 @@ actor {
             };
         };
 
-        await Governance.init(Principal.fromActor(daoStub), Principal.fromActor(stakingStub));
+        await Governance.init(Principal.fromActor(daoStub), Principal.fromActor(stakingStub), "default");
 
         let malicious = actor {
             public func attemptReinit() : async Bool {
                 try {
-                    await Governance.init(Principal.fromActor(daoStub), Principal.fromActor(stakingStub));
+                    await Governance.init(Principal.fromActor(daoStub), Principal.fromActor(stakingStub), "default");
                     false
                 } catch (_) {
                     true

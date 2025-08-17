@@ -7,13 +7,14 @@ export const useAssets = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const uploadAsset = async (file, isPublic = true, tags = []) => {
+  const uploadAsset = async (daoId, file, isPublic = true, tags = []) => {
     setLoading(true);
     setError(null);
     try {
       const arrayBuffer = await file.arrayBuffer();
       const data = Array.from(new Uint8Array(arrayBuffer));
       const result = await actors.assets.uploadAsset(
+        BigInt(daoId),
         file.name,
         file.type,
         data,
@@ -32,11 +33,11 @@ export const useAssets = () => {
     }
   };
 
-  const getAsset = async (assetId) => {
+  const getAsset = async (daoId, assetId) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.assets.getAsset(BigInt(assetId));
+      const res = await actors.assets.getAsset(BigInt(daoId), BigInt(assetId));
       if (res.err) {
         throw new Error(res.err);
       }
@@ -49,11 +50,11 @@ export const useAssets = () => {
     }
   };
 
-  const getAssetMetadata = async (assetId) => {
+  const getAssetMetadata = async (daoId, assetId) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getAssetMetadata(BigInt(assetId));
+      return await actors.assets.getAssetMetadata(BigInt(daoId), BigInt(assetId));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -62,11 +63,11 @@ export const useAssets = () => {
     }
   };
 
-  const getPublicAssets = async () => {
+  const getPublicAssets = async (daoId) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getPublicAssets();
+      return await actors.assets.getPublicAssets(BigInt(daoId));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -75,11 +76,11 @@ export const useAssets = () => {
     }
   };
 
-  const getUserAssets = async () => {
+  const getUserAssets = async (daoId) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getUserAssets();
+      return await actors.assets.getUserAssets(BigInt(daoId));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -88,11 +89,11 @@ export const useAssets = () => {
     }
   };
 
-  const searchAssetsByTag = async (tag) => {
+  const searchAssetsByTag = async (daoId, tag) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.searchAssetsByTag(tag);
+      return await actors.assets.searchAssetsByTag(BigInt(daoId), tag);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -101,11 +102,11 @@ export const useAssets = () => {
     }
   };
 
-  const deleteAsset = async (assetId) => {
+  const deleteAsset = async (daoId, assetId) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.assets.deleteAsset(BigInt(assetId));
+      const res = await actors.assets.deleteAsset(BigInt(daoId), BigInt(assetId));
       if (res.err) {
         throw new Error(res.err);
       }
@@ -118,11 +119,12 @@ export const useAssets = () => {
     }
   };
 
-  const updateAssetMetadata = async (assetId, { name = null, isPublic = null, tags = null }) => {
+  const updateAssetMetadata = async (daoId, assetId, { name = null, isPublic = null, tags = null }) => {
     setLoading(true);
     setError(null);
     try {
       const res = await actors.assets.updateAssetMetadata(
+        BigInt(daoId),
         BigInt(assetId),
         name === null ? [] : [name],
         isPublic === null ? [] : [isPublic],
@@ -140,11 +142,11 @@ export const useAssets = () => {
     }
   };
 
-  const getStorageStats = async () => {
+  const getStorageStats = async (daoId) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getStorageStats();
+      return await actors.assets.getStorageStats(BigInt(daoId));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -241,11 +243,11 @@ export const useAssets = () => {
     }
   };
 
-  const getAssetByName = async (name) => {
+  const getAssetByName = async (daoId, name) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getAssetByName(name);
+      return await actors.assets.getAssetByName(BigInt(daoId), name);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -254,7 +256,7 @@ export const useAssets = () => {
     }
   };
 
-  const batchUploadAssets = async (files) => {
+  const batchUploadAssets = async (daoId, files) => {
     setLoading(true);
     setError(null);
     try {
@@ -265,7 +267,7 @@ export const useAssets = () => {
           return [file.name, file.type, data, isPublic, tags];
         })
       );
-      return await actors.assets.batchUploadAssets(formatted);
+      return await actors.assets.batchUploadAssets(BigInt(daoId), formatted);
     } catch (err) {
       setError(err.message);
       throw err;

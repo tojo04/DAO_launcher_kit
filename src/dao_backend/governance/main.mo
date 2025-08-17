@@ -42,6 +42,7 @@ persistent actor GovernanceCanister {
     type GovernanceError = Types.GovernanceError;
     type CommonError = Types.CommonError;
 
+
     // Key types for multi-DAO support
     type ProposalKey = (Principal, ProposalId);
     type VoteKey = (Principal, ProposalId, Principal);
@@ -71,6 +72,13 @@ persistent actor GovernanceCanister {
             activeStakes: Nat;
             totalVotingPower: Nat;
         };
+
+    // Inter-canister communication setup
+    // These actor references enable cross-canister calls for governance functionality
+    var dao : actor {
+        getUserProfile: shared query (Types.DAOId, Principal) -> async ?Types.UserProfile;
+        checkIsAdmin: shared query (Types.DAOId, Principal) -> async Bool;
+
     } = actor("aaaaa-aa");
 
     // Stable storage for upgrade persistence
@@ -80,6 +88,7 @@ persistent actor GovernanceCanister {
     private var votesEntries : [(VoteKey, Vote)] = [];
     private var configEntries : [(Principal, GovernanceConfig)] = [];
     private var stakingId : Principal = Principal.fromText("aaaaa-aa");
+    private var daoInstance : Types.DAOId = "";
     private var initialized : Bool = false;
 
     // Runtime storage - rebuilt from stable storage after upgrades
@@ -88,7 +97,7 @@ persistent actor GovernanceCanister {
     private transient var votes = HashMap.HashMap<VoteKey, Vote>(100, voteKeyEqual, voteKeyHash);
     private transient var config = HashMap.HashMap<Principal, GovernanceConfig>(1, Principal.equal, Principal.hash);
 
-    public shared(msg) func init(newDaoId: Principal, newStakingId: Principal) : async () {
+    public shared(msg) func init(newDaoId: Principal, newStakingId: Principal, daoInstanceId: Types.DAOId) : async () {
         if (initialized) {
             Debug.print("Initialization already completed");
             throw Error.reject("Governance canister already initialized");
@@ -98,16 +107,19 @@ persistent actor GovernanceCanister {
         let caller = msg.caller;
         let self = Principal.fromActor(GovernanceCanister);
         let daoTemp : actor {
-            getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
-            checkIsAdmin: shared query (Principal) -> async Bool;
+            getUserProfile: shared query (Types.DAOId, Principal) -> async ?Types.UserProfile;
+            checkIsAdmin: shared query (Types.DAOId, Principal) -> async Bool;
         } = actor(Principal.toText(newDaoId));
-        let isAdmin = await daoTemp.checkIsAdmin(caller);
+        let isAdmin = await daoTemp.checkIsAdmin(daoInstanceId, caller);
         if (caller != self and not isAdmin) {
             Debug.print("Unauthorized init attempt by " # Principal.toText(caller));
             throw Error.reject("Caller is not authorized to initialize");
         };
 
         stakingId := newStakingId;
+
+        daoInstance := daoInstanceId;
+        dao := daoTemp;
         staking := actor(Principal.toText(newStakingId));
         initialized := true;
         Debug.print("Initialization complete");
@@ -175,12 +187,13 @@ persistent actor GovernanceCanister {
         proposalType: Types.ProposalType,
         votingPeriod: ?Nat
     ) : async Result<ProposalId, Text> {
+
         let caller = msg.caller;
 
         // Check if user has too many active proposals in this DAO
         let activeProposals = getActiveProposalsByUser(daoId, caller);
         let currentConfig = getConfigForDao(daoId);
-        
+
         if (Array.size(activeProposals) >= currentConfig.maxProposalsPerUser) {
             return #err("Maximum active proposals limit reached");
         };
@@ -206,6 +219,7 @@ persistent actor GovernanceCanister {
             totalVotingPower = 0;
             createdAt = Time.now();
             votingDeadline = Time.now() + period;
+
             executionDeadline = ?(Time.now() + period + (24 * 60 * 60 * 1_000_000_000));
             quorumThreshold = currentConfig.quorumThreshold;
             approvalThreshold = currentConfig.approvalThreshold;
@@ -215,6 +229,7 @@ persistent actor GovernanceCanister {
         #ok(proposalId)
     };
 
+
     // Cast a vote on a proposal
     public shared(msg) func vote(
         daoId: Principal,
@@ -222,6 +237,7 @@ persistent actor GovernanceCanister {
         choice: Types.VoteChoice,
         reason: ?Text
     ) : async Result<(), Text> {
+
         let caller = msg.caller;
         let voteKey : VoteKey = (daoId, proposalId, caller);
 
@@ -262,6 +278,7 @@ persistent actor GovernanceCanister {
         };
 
         // Create vote record
+
         let vote : Vote = {
             daoId = daoId;
             voter = caller;
@@ -272,11 +289,13 @@ persistent actor GovernanceCanister {
             reason = reason;
         };
 
+
         votes.put(voteKey, vote);
 
         // Update proposal vote counts
         let updatedProposal = switch (choice) {
             case (#inFavor) {
+
                 {
                     daoId = proposal.daoId;
                     id = proposal.id;
@@ -335,6 +354,7 @@ persistent actor GovernanceCanister {
             };
         };
 
+
         proposals.put((daoId, proposalId), updatedProposal);
         #ok()
     };
@@ -374,6 +394,7 @@ persistent actor GovernanceCanister {
                 quorumThreshold = proposal.quorumThreshold;
                 approvalThreshold = proposal.approvalThreshold;
             };
+
             proposals.put((daoId, proposalId), failedProposal);
             return #err("Quorum not met");
         };
@@ -406,6 +427,7 @@ persistent actor GovernanceCanister {
             quorumThreshold = proposal.quorumThreshold;
             approvalThreshold = proposal.approvalThreshold;
         };
+
         proposals.put((daoId, proposalId), updatedProposal);
 
         if (newStatus == #succeeded) {
@@ -428,8 +450,10 @@ persistent actor GovernanceCanister {
                 quorumThreshold = updatedProposal.quorumThreshold;
                 approvalThreshold = updatedProposal.approvalThreshold;
             };
+
             proposals.put((daoId, proposalId), executedProposal);
         };
+
 
         #ok()
     };

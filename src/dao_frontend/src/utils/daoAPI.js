@@ -43,109 +43,124 @@ export class DAOAPIWrapper {
     }
 
     // DAO Management APIs
-    async initializeDAO(name, description, initialAdmins) {
+    async initializeDAO(daoId, name, description, initialAdmins) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.initialize(name, description, initialAdmins),
+            () => this.actors.daoBackend.initialize(id, name, description, initialAdmins),
             'Initialize DAO'
         );
     }
 
-    async setCanisterReferences(governance, staking, treasury, proposals) {
+    async setCanisterReferences(daoId, governance, staking, treasury, proposals) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.setCanisterReferences(governance, staking, treasury, proposals),
+            () => this.actors.daoBackend.setCanisterReferences(id, governance, staking, treasury, proposals),
             'Set Canister References'
         );
     }
 
-    async getCanisterReferences() {
+    async getCanisterReferences(daoId) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.getCanisterReferences(),
+            () => this.actors.daoBackend.getCanisterReferences(id),
             'Get Canister References'
         );
     }
 
-    async setDAOConfig(config) {
+    async setDAOConfig(daoId, config) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.setDAOConfig(config),
+            () => this.actors.daoBackend.setDAOConfig(id, config),
             'Set DAO Configuration'
         );
     }
 
-    async getDAOInfo() {
+    async getDAOInfo(daoId) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.getDAOInfo(),
+            () => this.actors.daoBackend.getDAOInfo(id),
             'Get DAO Info'
         );
     }
 
-    async getDAOConfig() {
+    async getDAOConfig(daoId) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.getDAOConfig(),
+            () => this.actors.daoBackend.getDAOConfig(id),
             'Get DAO Configuration'
         );
     }
 
-    async getDAOStats() {
+    async getDAOStats(daoId) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.getDAOStats(),
+            () => this.actors.daoBackend.getDAOStats(id),
             'Get DAO Statistics'
         );
     }
 
     // User Management APIs
-    async registerUser(displayName, bio) {
+    async registerUser(daoId, displayName, bio) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.registerUser(displayName, bio),
+            () => this.actors.daoBackend.registerUser(id, displayName, bio),
             'Register User'
         );
     }
 
-    async adminRegisterUser(userPrincipal, displayName, bio) {
+    async adminRegisterUser(daoId, userPrincipal, displayName, bio) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.adminRegisterUser(userPrincipal, displayName, bio),
+            () => this.actors.daoBackend.adminRegisterUser(id, userPrincipal, displayName, bio),
             'Admin Register User'
         );
     }
 
-    async updateUserProfile(displayName, bio) {
+    async updateUserProfile(daoId, displayName, bio) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.updateUserProfile(displayName, bio),
+            () => this.actors.daoBackend.updateUserProfile(id, displayName, bio),
             'Update User Profile'
         );
     }
 
-    async getUserProfile(userId) {
+    async getUserProfile(daoId, userId) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.getUserProfile(userId),
+            () => this.actors.daoBackend.getUserProfile(id, userId),
             'Get User Profile'
         );
     }
 
-    async getAllUsers() {
+    async getAllUsers(daoId) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.getAllUsers(),
+            () => this.actors.daoBackend.getAllUsers(id),
             'Get All Users'
         );
     }
 
     // Admin Management APIs
-    async addAdmin(newAdmin) {
+    async addAdmin(daoId, newAdmin) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.addAdmin(newAdmin),
+            () => this.actors.daoBackend.addAdmin(id, newAdmin),
             'Add Admin'
         );
     }
 
-    async removeAdmin(adminToRemove) {
+    async removeAdmin(daoId, adminToRemove) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.removeAdmin(adminToRemove),
+            () => this.actors.daoBackend.removeAdmin(id, adminToRemove),
             'Remove Admin'
         );
     }
 
-    async checkIsAdmin(principal) {
+    async checkIsAdmin(daoId, principal) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.checkIsAdmin(principal),
+            () => this.actors.daoBackend.checkIsAdmin(id, principal),
             'Check Is Admin'
         );
     }
@@ -158,16 +173,18 @@ export class DAOAPIWrapper {
         );
     }
 
-    async createProposal(title, description, proposalType) {
+    async createProposal(daoId, title, description, proposalType) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.createProposal(title, description, proposalType),
+            () => this.actors.daoBackend.createProposal(id, title, description, proposalType),
             'Create Proposal'
         );
     }
 
-    async vote(proposalId, choice, reason) {
+    async vote(daoId, proposalId, choice, reason) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.vote(proposalId, choice, reason),
+            () => this.actors.daoBackend.vote(id, proposalId, choice, reason),
             'Cast Vote'
         );
     }
