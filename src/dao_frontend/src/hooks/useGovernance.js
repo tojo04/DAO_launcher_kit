@@ -68,6 +68,21 @@ export const useGovernance = () => {
     }
   };
 
+  const updateConfig = async (config) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await actors.governance.updateConfig(config);
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getGovernanceStats = async () => {
     setLoading(true);
     setError(null);
@@ -82,5 +97,13 @@ export const useGovernance = () => {
     }
   };
 
-  return { createProposal, vote, getConfig, getGovernanceStats, loading, error };
+  return {
+    createProposal,
+    vote,
+    getConfig,
+    updateConfig,
+    getGovernanceStats,
+    loading,
+    error,
+  };
 };

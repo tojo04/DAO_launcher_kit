@@ -52,5 +52,69 @@ export const useStaking = () => {
     }
   };
 
-  return { stake, unstake, claimRewards, loading, error };
+  const getStake = async (stakeId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await actors.staking.getStake(BigInt(stakeId));
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getUserStakes = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const principal = await actors.staking.agent.getPrincipal();
+      return await actors.staking.getUserStakes(principal);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getUserStakingSummary = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const principal = await actors.staking.agent.getPrincipal();
+      return await actors.staking.getUserStakingSummary(principal);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStakingStats = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await actors.staking.getStakingStats();
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    stake,
+    unstake,
+    claimRewards,
+    getStake,
+    getUserStakes,
+    getUserStakingSummary,
+    getStakingStats,
+    loading,
+    error,
+  };
 };

@@ -1,69 +1,86 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { 
-  FileText, 
-  Plus, 
-  Vote,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Users,
-  Calendar,
-  Target,
-  TrendingUp
-} from 'lucide-react';
 import { DAO } from '../../types/dao';
+import { useProposals } from '../../hooks/useProposals';
 
 const ManagementProposals: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
+  const { getTrendingProposals, addTemplate, loading, error } = useProposals();
+  const [trending, setTrending] = useState<any[]>([]);
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    category: '',
+    required: ''
+  });
+
+  useEffect(() => {
+    getTrendingProposals(5)
+      .then(setTrending)
+      .catch(console.error);
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const fields = form.required
+      .split(',')
+      .map(f => f.trim())
+      .filter(Boolean);
+    try {
+      await addTemplate(form.name, form.description, form.category, fields, {});
+      setForm({ name: '', description: '', category: '', required: '' });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-2 font-mono">PROPOSALS</h2>
-          <p className="text-gray-400">
-            Create and manage governance proposals for {dao.name}
-          </p>
-        </div>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all font-semibold"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Proposal</span>
-        </motion.button>
+    <div className="space-y-4">
+      <h2 className="text-2xl font-bold text-white font-mono">PROPOSALS for {dao.name}</h2>
+      {loading && <p className="text-gray-400">Loading...</p>}
+      {error && <p className="text-red-400">{error}</p>}
+      <div>
+        <h3 className="text-xl font-semibold text-white font-mono mb-2">Trending</h3>
+        <ul className="space-y-2">
+          {trending.map(p => (
+            <li key={p.id?.toString?.()} className="p-4 border border-gray-700 rounded-lg">
+              <span className="text-white">{p.title}</span>
+            </li>
+          ))}
+        </ul>
       </div>
-
-      {/* Placeholder Content */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-8 text-center"
-      >
-        <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-white mb-2 font-mono">PROPOSALS MANAGEMENT</h3>
-        <p className="text-gray-400 mb-6">
-          This section will contain detailed proposal management functionality
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-900/50 border border-blue-500/30 p-4 rounded-lg">
-            <Vote className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-            <p className="text-blue-400 font-mono">Create Proposals</p>
-          </div>
-          <div className="bg-gray-900/50 border border-green-500/30 p-4 rounded-lg">
-            <Users className="w-8 h-8 text-green-400 mx-auto mb-2" />
-            <p className="text-green-400 font-mono">Vote on Proposals</p>
-          </div>
-          <div className="bg-gray-900/50 border border-purple-500/30 p-4 rounded-lg">
-            <TrendingUp className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-            <p className="text-purple-400 font-mono">Track Results</p>
-          </div>
-        </div>
-      </motion.div>
+      <div>
+        <h3 className="text-xl font-semibold text-white font-mono mb-2">Add Template</h3>
+        <form onSubmit={handleSubmit} className="space-y-2">
+          <input
+            className="w-full p-2 bg-gray-900 border border-gray-700 rounded"
+            placeholder="Name"
+            value={form.name}
+            onChange={e => setForm({ ...form, name: e.target.value })}
+          />
+          <input
+            className="w-full p-2 bg-gray-900 border border-gray-700 rounded"
+            placeholder="Description"
+            value={form.description}
+            onChange={e => setForm({ ...form, description: e.target.value })}
+          />
+          <input
+            className="w-full p-2 bg-gray-900 border border-gray-700 rounded"
+            placeholder="Category"
+            value={form.category}
+            onChange={e => setForm({ ...form, category: e.target.value })}
+          />
+          <input
+            className="w-full p-2 bg-gray-900 border border-gray-700 rounded"
+            placeholder="Required Fields (comma separated)"
+            value={form.required}
+            onChange={e => setForm({ ...form, required: e.target.value })}
+          />
+          <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">
+            Add Template
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
