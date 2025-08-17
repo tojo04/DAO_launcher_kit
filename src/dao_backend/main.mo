@@ -445,21 +445,51 @@ persistent actor DAOMain {
         }
     };
 
-    // Temporary proposal creation (will delegate to proposals canister later)
+    // Proposal creation delegates to the proposals canister
     public shared(msg) func createProposal(
         daoId: DAOId,
         title: Text,
-        _description: Text,
-        _proposalType: Text
+        description: Text,
+        proposalType: Types.ProposalType,
+        category: ?Text,
+        votingPeriod: ?Nat
     ) : async Result<Nat, Text> {
         if (not isRegisteredUser(daoId, msg.caller)) {
             return #err("Only registered users can create proposals");
         };
-        
-        // For now, return success with a dummy proposal ID
-        // Later this will delegate to the proposals canister
-        Debug.print("Proposal created: " # title);
-        #ok(1) // Return dummy proposal ID
+
+        let state = ensureDAO(daoId);
+        let canisterId = switch (state.proposalsCanister) {
+            case (?pid) pid;
+            case null return #err("Proposals canister not set");
+        };
+
+        let proposals = actor(Principal.toText(canisterId)) : actor {
+            createProposal : shared (
+                Principal,
+                Text,
+                Text,
+                Types.ProposalType,
+                ?Text,
+                ?Nat
+            ) -> async Result<Nat, Text>;
+        };
+
+        let daoPrincipal = Principal.fromText(daoId);
+        let result = try {
+            await proposals.createProposal(
+                daoPrincipal,
+                title,
+                description,
+                proposalType,
+                category,
+                votingPeriod
+            )
+        } catch (err) {
+            return #err("Failed to call proposals canister");
+        };
+
+        result
     };
 
     // Temporary voting function (will delegate to proposals canister later)
