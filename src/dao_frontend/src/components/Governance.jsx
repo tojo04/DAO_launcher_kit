@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGovernance } from '../hooks/useGovernance';
 import { safeJsonStringify } from '../utils/jsonUtils';
+import { useDAO } from '../context/DAOContext';
 
 const Governance = () => {
   const {
@@ -12,6 +13,7 @@ const Governance = () => {
     loading,
     error,
   } = useGovernance();
+  const { activeDAO } = useDAO();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [proposalType, setProposalType] = useState('textProposal');
@@ -32,7 +34,7 @@ const Governance = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const cfg = await getConfig();
+        const cfg = await getConfig(activeDAO?.id);
         setConfig(cfg);
         if (cfg) {
           setNewConfig({
@@ -43,14 +45,14 @@ const Governance = () => {
             maxProposalsPerUser: cfg.maxProposalsPerUser.toString(),
           });
         }
-        const st = await getGovernanceStats();
+        const st = await getGovernanceStats(activeDAO?.id);
         setStats(st);
       } catch (e) {
         // error handled in hook
       }
     };
     fetchData();
-  }, []);
+  }, [activeDAO]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -59,7 +61,8 @@ const Governance = () => {
         title,
         description,
         { [proposalType]: proposalType === 'textProposal' ? '' : null },
-        votingPeriod
+        votingPeriod,
+        activeDAO?.id
       );
       console.log('Created proposal:', id);
       setTitle('');
@@ -74,7 +77,7 @@ const Governance = () => {
   const handleVote = async (e) => {
     e.preventDefault();
     try {
-      await vote(proposalId, choice, reason);
+      await vote(proposalId, choice, reason, activeDAO?.id);
       console.log('Voted on proposal');
       setProposalId('');
       setReason('');
@@ -97,7 +100,7 @@ const Governance = () => {
         proposalDeposit: BigInt(newConfig.proposalDeposit || 0),
         maxProposalsPerUser: BigInt(newConfig.maxProposalsPerUser || 0),
       };
-      await updateConfig(cfg);
+      await updateConfig(cfg, activeDAO?.id);
       setConfig(cfg);
     } catch (err) {
       console.error(err);

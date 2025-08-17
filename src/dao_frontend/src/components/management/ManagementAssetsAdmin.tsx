@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAssets } from '../../hooks/useAssets';
 import { Plus, Trash2 } from 'lucide-react';
+import { useDAO } from '../../context/DAOContext';
 
 const ManagementAssetsAdmin: React.FC = () => {
   const {
@@ -10,6 +11,7 @@ const ManagementAssetsAdmin: React.FC = () => {
     getStorageStats,
     updateStorageLimits,
   } = useAssets();
+  const { activeDAO } = useDAO();
 
   const [uploaders, setUploaders] = useState<string[]>([]);
   const [newUploader, setNewUploader] = useState('');
@@ -22,8 +24,8 @@ const ManagementAssetsAdmin: React.FC = () => {
   const loadData = async () => {
     try {
       const [uploaderList, storageStats] = await Promise.all([
-        getAuthorizedUploaders(),
-        getStorageStats(),
+        getAuthorizedUploaders(activeDAO?.id),
+        getStorageStats(activeDAO?.id),
       ]);
       setUploaders(uploaderList);
       setStats(storageStats);
@@ -41,7 +43,7 @@ const ManagementAssetsAdmin: React.FC = () => {
     setMessage('');
     setError('');
     try {
-      await addAuthorizedUploader(newUploader);
+      await addAuthorizedUploader(newUploader, activeDAO?.id);
       setMessage('Uploader added successfully');
       setNewUploader('');
       await loadData();
@@ -54,7 +56,7 @@ const ManagementAssetsAdmin: React.FC = () => {
     setMessage('');
     setError('');
     try {
-      await removeAuthorizedUploader(principal);
+      await removeAuthorizedUploader(principal, activeDAO?.id);
       setMessage('Uploader removed successfully');
       await loadData();
     } catch (err: any) {
@@ -68,7 +70,7 @@ const ManagementAssetsAdmin: React.FC = () => {
     try {
       const maxFile = maxFileSize ? parseInt(maxFileSize, 10) : null;
       const maxTotal = maxTotalStorage ? parseInt(maxTotalStorage, 10) : null;
-      await updateStorageLimits(maxFile, maxTotal);
+      await updateStorageLimits(maxFile, maxTotal, activeDAO?.id);
       setMessage('Storage limits updated');
       setMaxFileSize('');
       setMaxTotalStorage('');

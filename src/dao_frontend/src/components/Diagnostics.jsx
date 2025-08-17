@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useDAOAPI } from '../utils/daoAPI';
 import { useAssets } from '../hooks/useAssets';
+import { useDAO } from '../context/DAOContext';
 import BackgroundParticles from './BackgroundParticles';
 import { Loader2 } from 'lucide-react';
 
@@ -35,6 +36,7 @@ const Diagnostics = () => {
   const { isAuthenticated, loading } = useAuth();
   const daoAPI = useDAOAPI();
   const { getHealth: getAssetsHealth } = useAssets();
+  const { activeDAO } = useDAO();
 
   const [references, setReferences] = useState(null);
   const [fetching, setFetching] = useState(true);
@@ -63,7 +65,7 @@ const Diagnostics = () => {
       }
 
       try {
-        const assets = await getAssetsHealth();
+        const assets = await getAssetsHealth(activeDAO?.id);
         setAssetsHealth(assets);
       } catch (err) {
         console.error('Failed to fetch assets health', err);
@@ -73,7 +75,7 @@ const Diagnostics = () => {
       }
     };
     fetchData();
-  }, [daoAPI, getAssetsHealth]);
+  }, [daoAPI, getAssetsHealth, activeDAO]);
 
   if (loading || fetching) {
     return (

@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { Principal } from '@dfinity/principal';
 import { useActors } from '../context/ActorContext';
+import { useDAO } from '../context/DAOContext';
 
 export const useAssets = () => {
   const actors = useActors();
+  const { activeDAO } = useDAO();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const uploadAsset = async (file, isPublic = true, tags = []) => {
+  const uploadAsset = async (file, isPublic = true, tags = [], daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
       const arrayBuffer = await file.arrayBuffer();
       const data = Array.from(new Uint8Array(arrayBuffer));
       const result = await actors.assets.uploadAsset(
+        daoId,
         file.name,
         file.type,
         data,
@@ -32,11 +35,11 @@ export const useAssets = () => {
     }
   };
 
-  const getAsset = async (assetId) => {
+  const getAsset = async (assetId, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.assets.getAsset(BigInt(assetId));
+      const res = await actors.assets.getAsset(daoId, BigInt(assetId));
       if (res.err) {
         throw new Error(res.err);
       }
@@ -49,11 +52,11 @@ export const useAssets = () => {
     }
   };
 
-  const getAssetMetadata = async (assetId) => {
+  const getAssetMetadata = async (assetId, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getAssetMetadata(BigInt(assetId));
+      return await actors.assets.getAssetMetadata(daoId, BigInt(assetId));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -62,11 +65,11 @@ export const useAssets = () => {
     }
   };
 
-  const getPublicAssets = async () => {
+  const getPublicAssets = async (daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getPublicAssets();
+      return await actors.assets.getPublicAssets(daoId);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -75,11 +78,11 @@ export const useAssets = () => {
     }
   };
 
-  const getUserAssets = async () => {
+  const getUserAssets = async (daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getUserAssets();
+      return await actors.assets.getUserAssets(daoId);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -88,11 +91,11 @@ export const useAssets = () => {
     }
   };
 
-  const searchAssetsByTag = async (tag) => {
+  const searchAssetsByTag = async (tag, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.searchAssetsByTag(tag);
+      return await actors.assets.searchAssetsByTag(daoId, tag);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -101,11 +104,11 @@ export const useAssets = () => {
     }
   };
 
-  const deleteAsset = async (assetId) => {
+  const deleteAsset = async (assetId, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.assets.deleteAsset(BigInt(assetId));
+      const res = await actors.assets.deleteAsset(daoId, BigInt(assetId));
       if (res.err) {
         throw new Error(res.err);
       }
@@ -118,11 +121,16 @@ export const useAssets = () => {
     }
   };
 
-  const updateAssetMetadata = async (assetId, { name = null, isPublic = null, tags = null }) => {
+  const updateAssetMetadata = async (
+    assetId,
+    { name = null, isPublic = null, tags = null },
+    daoId = activeDAO?.id
+  ) => {
     setLoading(true);
     setError(null);
     try {
       const res = await actors.assets.updateAssetMetadata(
+        daoId,
         BigInt(assetId),
         name === null ? [] : [name],
         isPublic === null ? [] : [isPublic],
@@ -140,11 +148,11 @@ export const useAssets = () => {
     }
   };
 
-  const getStorageStats = async () => {
+  const getStorageStats = async (daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getStorageStats();
+      return await actors.assets.getStorageStats(daoId);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -153,11 +161,11 @@ export const useAssets = () => {
     }
   };
 
-  const getAuthorizedUploaders = async () => {
+  const getAuthorizedUploaders = async (daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.assets.getAuthorizedUploaders();
+      const res = await actors.assets.getAuthorizedUploaders(daoId);
       return res.map((p) => p.toText());
     } catch (err) {
       setError(err.message);
@@ -167,11 +175,12 @@ export const useAssets = () => {
     }
   };
 
-  const addAuthorizedUploader = async (principal) => {
+  const addAuthorizedUploader = async (principal, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
       const res = await actors.assets.addAuthorizedUploader(
+        daoId,
         Principal.fromText(principal)
       );
       if (res.err) {
@@ -186,11 +195,12 @@ export const useAssets = () => {
     }
   };
 
-  const removeAuthorizedUploader = async (principal) => {
+  const removeAuthorizedUploader = async (principal, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
       const res = await actors.assets.removeAuthorizedUploader(
+        daoId,
         Principal.fromText(principal)
       );
       if (res.err) {
@@ -207,12 +217,14 @@ export const useAssets = () => {
 
   const updateStorageLimits = async (
     maxFileSizeNew = null,
-    maxTotalStorageNew = null
+    maxTotalStorageNew = null,
+    daoId = activeDAO?.id
   ) => {
     setLoading(true);
     setError(null);
     try {
       const res = await actors.assets.updateStorageLimits(
+        daoId,
         maxFileSizeNew === null ? [] : [BigInt(maxFileSizeNew)],
         maxTotalStorageNew === null ? [] : [BigInt(maxTotalStorageNew)]
       );
@@ -228,11 +240,11 @@ export const useAssets = () => {
     }
   };
 
-  const getSupportedContentTypes = async () => {
+  const getSupportedContentTypes = async (daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getSupportedContentTypes();
+      return await actors.assets.getSupportedContentTypes(daoId);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -241,11 +253,11 @@ export const useAssets = () => {
     }
   };
 
-  const getAssetByName = async (name) => {
+  const getAssetByName = async (name, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getAssetByName(name);
+      return await actors.assets.getAssetByName(daoId, name);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -254,7 +266,7 @@ export const useAssets = () => {
     }
   };
 
-  const batchUploadAssets = async (files) => {
+  const batchUploadAssets = async (files, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
@@ -265,7 +277,7 @@ export const useAssets = () => {
           return [file.name, file.type, data, isPublic, tags];
         })
       );
-      return await actors.assets.batchUploadAssets(formatted);
+      return await actors.assets.batchUploadAssets(daoId, formatted);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -274,11 +286,11 @@ export const useAssets = () => {
     }
   };
 
-  const getHealth = async () => {
+  const getHealth = async (daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.health();
+      return await actors.assets.health(daoId);
     } catch (err) {
       setError(err.message);
       throw err;

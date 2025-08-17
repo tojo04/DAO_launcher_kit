@@ -36,7 +36,7 @@ const ManagementTreasury: React.FC = () => {
   useEffect(() => {
     const fetchPrincipals = async () => {
       try {
-        const list = await getAuthorizedPrincipals();
+        const list = await getAuthorizedPrincipals(dao.id);
         setPrincipals(list);
       } catch (err) {
         console.error(err);
@@ -48,8 +48,8 @@ const ManagementTreasury: React.FC = () => {
   const handleAdd = async () => {
     if (!newPrincipal.trim()) return;
     try {
-      await addAuthorizedPrincipal(newPrincipal.trim());
-      const list = await getAuthorizedPrincipals();
+      await addAuthorizedPrincipal(newPrincipal.trim(), dao.id);
+      const list = await getAuthorizedPrincipals(dao.id);
       setPrincipals(list);
       setNewPrincipal('');
     } catch (err) {
@@ -59,8 +59,8 @@ const ManagementTreasury: React.FC = () => {
 
   const handleRemove = async (principal: string) => {
     try {
-      await removeAuthorizedPrincipal(principal);
-      const list = await getAuthorizedPrincipals();
+      await removeAuthorizedPrincipal(principal, dao.id);
+      const list = await getAuthorizedPrincipals(dao.id);
       setPrincipals(list);
     } catch (err) {
       console.error(err);
@@ -77,11 +77,11 @@ const ManagementTreasury: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const bal = await getBalance();
+      const bal = await getBalance(dao.id);
       setBalance(bal);
-      const s = await getTreasuryStats();
+      const s = await getTreasuryStats(dao.id);
       setStats(s);
-      const txs = await getAllTransactions();
+      const txs = await getAllTransactions(dao.id);
       const formatted = txs.map((tx: any) => {
         const isInflow =
           'deposit' in tx.transactionType || 'stakingReward' in tx.transactionType;
@@ -111,7 +111,7 @@ const ManagementTreasury: React.FC = () => {
     if (!amount) return;
     const description = prompt('Enter description') || '';
     try {
-      await deposit(amount, description);
+      await deposit(amount, description, dao.id);
       await fetchData();
     } catch (e) {
       console.error(e);
@@ -124,7 +124,7 @@ const ManagementTreasury: React.FC = () => {
     if (!recipient || !amount) return;
     const description = prompt('Enter description') || '';
     try {
-      await withdraw(recipient, amount, description);
+      await withdraw(recipient, amount, description, dao.id);
       await fetchData();
     } catch (e) {
       console.error(e);

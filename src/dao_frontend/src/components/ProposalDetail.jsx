@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useGovernance } from '../hooks/useGovernance';
 import { useAuth } from '../context/AuthContext';
+import { useDAO } from '../context/DAOContext';
 
 const ProposalDetail = ({ proposalId, onClose }) => {
   const {
@@ -12,27 +13,28 @@ const ProposalDetail = ({ proposalId, onClose }) => {
     error,
   } = useGovernance();
   const { principal } = useAuth();
+  const { activeDAO } = useDAO();
   const [proposal, setProposal] = useState(null);
   const [votes, setVotes] = useState([]);
   const [userVote, setUserVote] = useState(null);
 
   useEffect(() => {
     const load = async () => {
-      const p = await getProposal(proposalId);
+      const p = await getProposal(proposalId, activeDAO?.id);
       setProposal(p);
-      const v = await getProposalVotes(proposalId);
+      const v = await getProposalVotes(proposalId, activeDAO?.id);
       setVotes(v);
       if (principal) {
-        const uv = await getUserVote(proposalId, principal);
+        const uv = await getUserVote(proposalId, principal, activeDAO?.id);
         setUserVote(uv);
       }
     };
     load();
-  }, [proposalId, principal]);
+  }, [proposalId, principal, activeDAO]);
 
   const handleExecute = async () => {
     try {
-      await executeProposal(proposalId);
+      await executeProposal(proposalId, activeDAO?.id);
     } catch (e) {
       console.error(e);
     }

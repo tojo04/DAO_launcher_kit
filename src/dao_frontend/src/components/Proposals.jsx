@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useProposals } from '../hooks/useProposals';
 import { useGovernance } from '../hooks/useGovernance';
 import ProposalDetail from './ProposalDetail';
+import { useDAO } from '../context/DAOContext';
 
 const Proposals = () => {
   const {
@@ -19,6 +20,7 @@ const Proposals = () => {
     loading: govLoading,
     error: govError,
   } = useGovernance();
+  const { activeDAO } = useDAO();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -38,20 +40,20 @@ const Proposals = () => {
     loadProposals();
     loadTemplates();
     loadGovProposals();
-  }, []);
+  }, [activeDAO]);
 
   const loadProposals = async () => {
-    const all = await getAllProposals();
+    const all = await getAllProposals(activeDAO?.id);
     setProposals(all);
   };
 
   const loadTemplates = async () => {
-    const tpls = await getProposalTemplates();
+    const tpls = await getProposalTemplates(activeDAO?.id);
     setTemplates(tpls);
   };
 
   const loadGovProposals = async () => {
-    const gps = await getGovProposals();
+    const gps = await getGovProposals(activeDAO?.id);
     setGovProposals(gps);
   };
 
@@ -59,7 +61,7 @@ const Proposals = () => {
     const value = e.target.value;
     setStatusFilter(value);
     if (value) {
-      const filtered = await getProposalsByStatus(value);
+      const filtered = await getProposalsByStatus(value, activeDAO?.id);
       setGovProposals(filtered);
     } else {
       loadGovProposals();
@@ -70,7 +72,13 @@ const Proposals = () => {
     e.preventDefault();
 
     try {
-      const id = await createProposal(title, description, category, votingPeriod);
+      const id = await createProposal(
+        title,
+        description,
+        category,
+        votingPeriod,
+        activeDAO?.id
+      );
       console.log('Created proposal:', id);
       setTitle('');
       setDescription('');
@@ -85,7 +93,7 @@ const Proposals = () => {
   const handleVote = async (e) => {
     e.preventDefault();
     try {
-      await vote(proposalId, choice, reason);
+      await vote(proposalId, choice, reason, activeDAO?.id);
       console.log('Voted on proposal');
       setProposalId('');
       setReason('');
@@ -98,7 +106,7 @@ const Proposals = () => {
     const value = e.target.value;
     setCategoryFilter(value);
     if (value) {
-      const filtered = await getProposalsByCategory(value);
+      const filtered = await getProposalsByCategory(value, activeDAO?.id);
       setProposals(filtered);
     } else {
       loadProposals();
@@ -110,7 +118,8 @@ const Proposals = () => {
       template.name,
       template.template,
       template.category,
-      votingPeriod
+      votingPeriod,
+      activeDAO?.id
     );
     loadProposals();
   };

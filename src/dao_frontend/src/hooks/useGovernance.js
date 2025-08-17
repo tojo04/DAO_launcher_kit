@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useActors } from '../context/ActorContext';
+import { useDAO } from '../context/DAOContext';
 
 export const useGovernance = () => {
   const actors = useActors();
+  const { activeDAO } = useDAO();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -12,12 +14,14 @@ export const useGovernance = () => {
     title,
     description,
     proposalType,
-    votingPeriod
+    votingPeriod,
+    daoId = activeDAO?.id
   ) => {
     setLoading(true);
     setError(null);
     try {
       const res = await actors.governance.createProposal(
+        daoId,
         title,
         description,
         proposalType,
@@ -33,12 +37,13 @@ export const useGovernance = () => {
     }
   };
 
-  const vote = async (proposalId, choice, reason) => {
+  const vote = async (proposalId, choice, reason, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
       const choiceVariant = { [choice]: null };
       const res = await actors.governance.vote(
+        daoId,
         BigInt(proposalId),
         choiceVariant,
         reason ? [reason] : []
@@ -53,11 +58,11 @@ export const useGovernance = () => {
     }
   };
 
-  const getConfig = async () => {
+  const getConfig = async (daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.governance.getConfig();
+      const res = await actors.governance.getConfig(daoId);
       if ('err' in res) throw new Error(res.err);
       return 'ok' in res ? res.ok : res;
     } catch (err) {
@@ -68,11 +73,11 @@ export const useGovernance = () => {
     }
   };
 
-  const getGovernanceStats = async () => {
+  const getGovernanceStats = async (daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.governance.getGovernanceStats();
+      const res = await actors.governance.getGovernanceStats(daoId);
       return res;
     } catch (err) {
       setError(err.message);
@@ -82,11 +87,11 @@ export const useGovernance = () => {
     }
   };
 
-  const executeProposal = async (proposalId) => {
+  const executeProposal = async (proposalId, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.governance.executeProposal(BigInt(proposalId));
+      const res = await actors.governance.executeProposal(daoId, BigInt(proposalId));
       if ('err' in res) throw new Error(res.err);
       return res.ok;
     } catch (err) {
@@ -97,11 +102,11 @@ export const useGovernance = () => {
     }
   };
 
-  const getActiveProposals = async () => {
+  const getActiveProposals = async (daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.governance.getActiveProposals();
+      return await actors.governance.getActiveProposals(daoId);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -110,11 +115,11 @@ export const useGovernance = () => {
     }
   };
 
-  const getAllProposals = async () => {
+  const getAllProposals = async (daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.governance.getAllProposals();
+      return await actors.governance.getAllProposals(daoId);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -123,11 +128,11 @@ export const useGovernance = () => {
     }
   };
 
-  const getProposal = async (proposalId) => {
+  const getProposal = async (proposalId, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.governance.getProposal(BigInt(proposalId));
+      const res = await actors.governance.getProposal(daoId, BigInt(proposalId));
       return res && res.length ? res[0] : null;
     } catch (err) {
       setError(err.message);
@@ -137,11 +142,11 @@ export const useGovernance = () => {
     }
   };
 
-  const getProposalVotes = async (proposalId) => {
+  const getProposalVotes = async (proposalId, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.governance.getProposalVotes(BigInt(proposalId));
+      return await actors.governance.getProposalVotes(daoId, BigInt(proposalId));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -150,12 +155,12 @@ export const useGovernance = () => {
     }
   };
 
-  const getProposalsByStatus = async (status) => {
+  const getProposalsByStatus = async (status, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
       const statusVariant = { [status]: null };
-      return await actors.governance.getProposalsByStatus(statusVariant);
+      return await actors.governance.getProposalsByStatus(daoId, statusVariant);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -164,11 +169,12 @@ export const useGovernance = () => {
     }
   };
 
-  const getUserVote = async (proposalId, user) => {
+  const getUserVote = async (proposalId, user, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
       const res = await actors.governance.getUserVote(
+        daoId,
         BigInt(proposalId),
         user
       );
@@ -181,11 +187,11 @@ export const useGovernance = () => {
     }
   };
 
-  const updateConfig = async (newConfig) => {
+  const updateConfig = async (newConfig, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.governance.updateConfig(newConfig);
+      const res = await actors.governance.updateConfig(daoId, newConfig);
       if ('err' in res) throw new Error(res.err);
       return res.ok;
     } catch (err) {

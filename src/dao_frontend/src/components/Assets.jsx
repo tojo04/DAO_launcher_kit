@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAssets } from '../hooks/useAssets';
+import { useDAO } from '../context/DAOContext';
 
 const Assets = () => {
   const {
@@ -16,6 +17,7 @@ const Assets = () => {
     loading,
     error,
   } = useAssets();
+  const { activeDAO } = useDAO();
   const [file, setFile] = useState(null);
   const [batchFiles, setBatchFiles] = useState([]);
   const [assets, setAssets] = useState([]);
@@ -30,7 +32,7 @@ const Assets = () => {
 
   const fetchStats = async () => {
     try {
-      const s = await getStorageStats();
+      const s = await getStorageStats(activeDAO?.id);
       setStats(s);
     } catch (err) {
       console.error(err);
@@ -39,7 +41,9 @@ const Assets = () => {
 
   const fetchAssets = async (t = '') => {
     try {
-      const list = t ? await searchAssetsByTag(t) : await getPublicAssets();
+      const list = t
+        ? await searchAssetsByTag(t, activeDAO?.id)
+        : await getPublicAssets(activeDAO?.id);
       setAssets(list);
     } catch (err) {
       console.error(err);
@@ -56,12 +60,12 @@ const Assets = () => {
     if (!file) return;
     setMessage('');
     try {
-      const supported = await getSupportedContentTypes();
+      const supported = await getSupportedContentTypes(activeDAO?.id);
       if (!supported.includes(file.type)) {
         setMessage(`Unsupported file type: ${file.type}`);
         return;
       }
-      await uploadAsset(file, true, []);
+      await uploadAsset(file, true, [], activeDAO?.id);
       setFile(null);
       setMessage('File uploaded');
       fetchAssets(tag);
@@ -81,7 +85,7 @@ const Assets = () => {
     if (!name) return;
     setMessage('');
     try {
-      const res = await getAssetByName(name);
+      const res = await getAssetByName(name, activeDAO?.id);
       if (res.length === 0) {
         setAssets([]);
         setMessage('No asset found');
@@ -98,13 +102,16 @@ const Assets = () => {
     if (batchFiles.length === 0) return;
     setMessage('');
     try {
-      const supported = await getSupportedContentTypes();
+      const supported = await getSupportedContentTypes(activeDAO?.id);
       const unsupported = batchFiles.filter((f) => !supported.includes(f.type));
       if (unsupported.length > 0) {
         setMessage(`Unsupported file types: ${unsupported.map((f) => f.name).join(', ')}`);
         return;
       }
-      await batchUploadAssets(batchFiles.map((f) => ({ file: f, isPublic: true, tags: [] })));
+      await batchUploadAssets(
+        batchFiles.map((f) => ({ file: f, isPublic: true, tags: [] })),
+        activeDAO?.id
+      );
       setBatchFiles([]);
       setMessage('Batch upload successful');
       fetchAssets(tag);
@@ -116,7 +123,7 @@ const Assets = () => {
 
   const handleView = async (id) => {
     try {
-      const asset = await getAsset(id);
+      const asset = await getAsset(id, activeDAO?.id);
       const blob = new Blob([new Uint8Array(asset.data)], { type: asset.contentType });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
@@ -127,7 +134,7 @@ const Assets = () => {
 
   const handleDelete = async (id) => {
     try {
-      await deleteAsset(id);
+      await deleteAsset(id, activeDAO?.id);
       fetchAssets(tag);
       fetchStats();
     } catch (err) {
@@ -149,11 +156,15 @@ const Assets = () => {
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
     try {
-      await updateAssetMetadata(id, {
-        name: editName,
-        isPublic: editPublic,
-        tags: tagsArray,
-      });
+      await updateAssetMetadata(
+        id,
+        {
+          name: editName,
+          isPublic: editPublic,
+          tags: tagsArray,
+        },
+        activeDAO?.id
+      );
       setEditingId(null);
       fetchAssets(tag);
       fetchStats();

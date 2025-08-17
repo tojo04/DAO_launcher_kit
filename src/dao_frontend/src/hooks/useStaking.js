@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { Principal } from '@dfinity/principal';
 import { useActors } from '../context/ActorContext';
+import { useDAO } from '../context/DAOContext';
 
 export const useStaking = () => {
   const actors = useActors();
+  const { activeDAO } = useDAO();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const stake = async (amount, period) => {
+  const stake = async (amount, period, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
       const periodVariant = { [period]: null };
-      const res = await actors.staking.stake(BigInt(amount), periodVariant);
+      const res = await actors.staking.stake(daoId, BigInt(amount), periodVariant);
       if ('err' in res) throw new Error(res.err);
       return res.ok;
     } catch (err) {
@@ -23,11 +25,11 @@ export const useStaking = () => {
     }
   };
 
-  const unstake = async (stakeId) => {
+  const unstake = async (stakeId, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.staking.unstake(BigInt(stakeId));
+      const res = await actors.staking.unstake(daoId, BigInt(stakeId));
       if ('err' in res) throw new Error(res.err);
       return res.ok;
     } catch (err) {
@@ -38,11 +40,11 @@ export const useStaking = () => {
     }
   };
 
-  const claimRewards = async (stakeId) => {
+  const claimRewards = async (stakeId, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.staking.claimRewards(BigInt(stakeId));
+      const res = await actors.staking.claimRewards(daoId, BigInt(stakeId));
       if ('err' in res) throw new Error(res.err);
       return res.ok;
     } catch (err) {
@@ -53,12 +55,13 @@ export const useStaking = () => {
     }
   };
 
-  const extendStakingPeriod = async (stakeId, newPeriod) => {
+  const extendStakingPeriod = async (stakeId, newPeriod, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
       const periodVariant = { [newPeriod]: null };
       const res = await actors.staking.extendStakingPeriod(
+        daoId,
         BigInt(stakeId),
         periodVariant
       );
@@ -72,11 +75,11 @@ export const useStaking = () => {
     }
   };
 
-  const getStake = async (stakeId) => {
+  const getStake = async (stakeId, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.staking.getStake(BigInt(stakeId));
+      return await actors.staking.getStake(daoId, BigInt(stakeId));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -85,11 +88,11 @@ export const useStaking = () => {
     }
   };
 
-  const getStakingRewards = async (stakeId) => {
+  const getStakingRewards = async (stakeId, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.staking.getStakingRewards(BigInt(stakeId));
+      return await actors.staking.getStakingRewards(daoId, BigInt(stakeId));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -98,11 +101,11 @@ export const useStaking = () => {
     }
   };
 
-  const getStakingStats = async () => {
+  const getStakingStats = async (daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.staking.getStakingStats();
+      return await actors.staking.getStakingStats(daoId);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -111,12 +114,12 @@ export const useStaking = () => {
     }
   };
 
-  const getUserStakes = async (user) => {
+  const getUserStakes = async (user, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
       const principal = Principal.fromText(user);
-      return await actors.staking.getUserStakes(principal);
+      return await actors.staking.getUserStakes(daoId, principal);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -125,12 +128,12 @@ export const useStaking = () => {
     }
   };
 
-  const getUserActiveStakes = async (user) => {
+  const getUserActiveStakes = async (user, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
       const principal = Principal.fromText(user);
-      return await actors.staking.getUserActiveStakes(principal);
+      return await actors.staking.getUserActiveStakes(daoId, principal);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -139,12 +142,12 @@ export const useStaking = () => {
     }
   };
 
-  const getUserStakingSummary = async (user) => {
+  const getUserStakingSummary = async (user, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
       const principal = Principal.fromText(user);
-      return await actors.staking.getUserStakingSummary(principal);
+      return await actors.staking.getUserStakingSummary(daoId, principal);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -153,11 +156,11 @@ export const useStaking = () => {
     }
   };
 
-  const setMinimumStakeAmount = async (amount) => {
+  const setMinimumStakeAmount = async (amount, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.staking.setMinimumStakeAmount(BigInt(amount));
+      const res = await actors.staking.setMinimumStakeAmount(daoId, BigInt(amount));
       if ('err' in res) throw new Error(res.err);
       return res.ok;
     } catch (err) {
@@ -168,11 +171,11 @@ export const useStaking = () => {
     }
   };
 
-  const setMaximumStakeAmount = async (amount) => {
+  const setMaximumStakeAmount = async (amount, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.staking.setMaximumStakeAmount(BigInt(amount));
+      const res = await actors.staking.setMaximumStakeAmount(daoId, BigInt(amount));
       if ('err' in res) throw new Error(res.err);
       return res.ok;
     } catch (err) {
@@ -183,11 +186,11 @@ export const useStaking = () => {
     }
   };
 
-  const setStakingEnabled = async (enabled) => {
+  const setStakingEnabled = async (enabled, daoId = activeDAO?.id) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.staking.setStakingEnabled(enabled);
+      const res = await actors.staking.setStakingEnabled(daoId, enabled);
       if ('err' in res) throw new Error(res.err);
       return res.ok;
     } catch (err) {

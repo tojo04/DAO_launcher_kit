@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTreasury } from '../hooks/useTreasury';
+import { useDAO } from '../context/DAOContext';
 
 const Treasury = () => {
   const {
@@ -16,6 +17,7 @@ const Treasury = () => {
     loading,
     error,
   } = useTreasury();
+  const { activeDAO } = useDAO();
   const [depositAmount, setDepositAmount] = useState('');
   const [depositDesc, setDepositDesc] = useState('');
   const [recipient, setRecipient] = useState('');
@@ -37,11 +39,11 @@ const Treasury = () => {
 
   const fetchData = async () => {
     try {
-      const bal = await getBalance();
+      const bal = await getBalance(activeDAO?.id);
       setBalance(bal);
-      const txs = await getRecentTransactions(5);
+      const txs = await getRecentTransactions(5, activeDAO?.id);
       setTransactions(txs);
-      const s = await getTreasuryStats();
+      const s = await getTreasuryStats(activeDAO?.id);
       setStats(s);
     } catch (e) {
       // error handled in hook
@@ -50,12 +52,12 @@ const Treasury = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [activeDAO]);
 
   const handleDeposit = async (e) => {
     e.preventDefault();
     try {
-      const txId = await deposit(depositAmount, depositDesc);
+      const txId = await deposit(depositAmount, depositDesc, activeDAO?.id);
       console.log('Deposit transaction:', txId);
       setDepositAmount('');
       setDepositDesc('');
@@ -68,7 +70,12 @@ const Treasury = () => {
   const handleWithdraw = async (e) => {
     e.preventDefault();
     try {
-      const txId = await withdraw(recipient, withdrawAmount, withdrawDesc);
+      const txId = await withdraw(
+        recipient,
+        withdrawAmount,
+        withdrawDesc,
+        activeDAO?.id
+      );
       console.log('Withdraw transaction:', txId);
       setRecipient('');
       setWithdrawAmount('');
@@ -81,7 +88,7 @@ const Treasury = () => {
 
   const handleLock = async (e) => {
     e.preventDefault();
-    await lockTokens(lockAmount, lockReason);
+    await lockTokens(lockAmount, lockReason, activeDAO?.id);
     setLockAmount('');
     setLockReason('');
     await fetchData();
@@ -89,7 +96,7 @@ const Treasury = () => {
 
   const handleUnlock = async (e) => {
     e.preventDefault();
-    await unlockTokens(unlockAmount, unlockReason);
+    await unlockTokens(unlockAmount, unlockReason, activeDAO?.id);
     setUnlockAmount('');
     setUnlockReason('');
     await fetchData();
@@ -97,7 +104,7 @@ const Treasury = () => {
 
   const handleReserve = async (e) => {
     e.preventDefault();
-    await reserveTokens(reserveAmount, reserveReason);
+    await reserveTokens(reserveAmount, reserveReason, activeDAO?.id);
     setReserveAmount('');
     setReserveReason('');
     await fetchData();
@@ -105,7 +112,7 @@ const Treasury = () => {
 
   const handleRelease = async (e) => {
     e.preventDefault();
-    await releaseReservedTokens(releaseAmount, releaseReason);
+    await releaseReservedTokens(releaseAmount, releaseReason, activeDAO?.id);
     setReleaseAmount('');
     setReleaseReason('');
     await fetchData();
@@ -113,7 +120,7 @@ const Treasury = () => {
 
   const handleFilter = async (e) => {
     e.preventDefault();
-    const txs = await getTransactionsByType(filterType);
+    const txs = await getTransactionsByType(filterType, activeDAO?.id);
     setFilteredTransactions(txs);
   };
 
