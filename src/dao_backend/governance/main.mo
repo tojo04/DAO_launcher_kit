@@ -157,6 +157,7 @@ persistent actor GovernanceCanister {
 
     // Create a new proposal
     public shared(msg) func createProposal(
+        daoId: Principal,
         title: Text,
         description: Text,
         proposalType: Types.ProposalType,
@@ -184,6 +185,7 @@ persistent actor GovernanceCanister {
         };
 
         let proposal : Proposal = {
+            daoId = daoId;
             id = proposalId;
             proposer = caller;
             title = title;
@@ -206,6 +208,7 @@ persistent actor GovernanceCanister {
 
     // Cast a vote on a proposal
     public shared(msg) func vote(
+        daoId: Principal,
         proposalId: ProposalId,
         choice: Types.VoteChoice,
         reason: ?Text
@@ -250,6 +253,7 @@ persistent actor GovernanceCanister {
 
         // Create vote record
         let vote : Vote = {
+            daoId = daoId;
             voter = caller;
             proposalId = proposalId;
             choice = choice;
@@ -264,6 +268,7 @@ persistent actor GovernanceCanister {
         let updatedProposal = switch (choice) {
             case (#inFavor) {
                 {
+                    daoId = proposal.daoId;
                     id = proposal.id;
                     proposer = proposal.proposer;
                     title = proposal.title;
@@ -282,6 +287,7 @@ persistent actor GovernanceCanister {
             };
             case (#against) {
                 {
+                    daoId = proposal.daoId;
                     id = proposal.id;
                     proposer = proposal.proposer;
                     title = proposal.title;
@@ -300,6 +306,7 @@ persistent actor GovernanceCanister {
             };
             case (#abstain) {
                 {
+                    daoId = proposal.daoId;
                     id = proposal.id;
                     proposer = proposal.proposer;
                     title = proposal.title;
@@ -341,6 +348,7 @@ persistent actor GovernanceCanister {
         // Check quorum
         if (proposal.totalVotingPower < proposal.quorumThreshold) {
             let failedProposal = {
+                daoId = proposal.daoId;
                 id = proposal.id;
                 proposer = proposal.proposer;
                 title = proposal.title;
@@ -372,6 +380,7 @@ persistent actor GovernanceCanister {
         };
 
         let updatedProposal = {
+            daoId = proposal.daoId;
             id = proposal.id;
             proposer = proposal.proposer;
             title = proposal.title;
@@ -393,6 +402,7 @@ persistent actor GovernanceCanister {
             // Here you would implement the actual execution logic
             // For now, we just mark it as executed
             let executedProposal = {
+                daoId = updatedProposal.daoId;
                 id = updatedProposal.id;
                 proposer = updatedProposal.proposer;
                 title = updatedProposal.title;

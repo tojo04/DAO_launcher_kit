@@ -89,7 +89,7 @@ persistent actor StakingCanister {
     // Public functions
 
     // Stake tokens
-    public shared(msg) func stake(amount: TokenAmount, period: StakingPeriod) : async Result<StakeId, Text> {
+    public shared(msg) func stake(daoId: Principal, amount: TokenAmount, period: StakingPeriod) : async Result<StakeId, Text> {
         let caller = msg.caller;
 
         if (not stakingEnabled) {
@@ -111,6 +111,7 @@ persistent actor StakingCanister {
         let unlockTime = calculateUnlockTime(now, period);
 
         let newStake : Stake = {
+            daoId = daoId;
             id = stakeId;
             staker = caller;
             amount = amount;
@@ -138,7 +139,7 @@ persistent actor StakingCanister {
     };
 
     // Unstake tokens
-    public shared(msg) func unstake(stakeId: StakeId) : async Result<TokenAmount, Text> {
+    public shared(msg) func unstake(daoId: Principal, stakeId: StakeId) : async Result<TokenAmount, Text> {
         let caller = msg.caller;
 
         let stake = switch (stakes.get(stakeId)) {
@@ -170,6 +171,7 @@ persistent actor StakingCanister {
 
         // Deactivate stake
         let updatedStake = {
+            daoId = stake.daoId;
             id = stake.id;
             staker = stake.staker;
             amount = stake.amount;
@@ -189,7 +191,7 @@ persistent actor StakingCanister {
     };
 
     // Claim rewards without unstaking (for instant staking)
-    public shared(msg) func claimRewards(stakeId: StakeId) : async Result<TokenAmount, Text> {
+    public shared(msg) func claimRewards(daoId: Principal, stakeId: StakeId) : async Result<TokenAmount, Text> {
         let caller = msg.caller;
 
         let stake = switch (stakes.get(stakeId)) {
@@ -222,6 +224,7 @@ persistent actor StakingCanister {
 
         // Update stake with claimed rewards
         let updatedStake = {
+            daoId = stake.daoId;
             id = stake.id;
             staker = stake.staker;
             amount = stake.amount;
@@ -239,7 +242,7 @@ persistent actor StakingCanister {
     };
 
     // Extend staking period
-    public shared(msg) func extendStakingPeriod(stakeId: StakeId, newPeriod: StakingPeriod) : async Result<(), Text> {
+    public shared(msg) func extendStakingPeriod(daoId: Principal, stakeId: StakeId, newPeriod: StakingPeriod) : async Result<(), Text> {
         let caller = msg.caller;
 
         let stake = switch (stakes.get(stakeId)) {
@@ -262,6 +265,7 @@ persistent actor StakingCanister {
 
         let newUnlockTime = calculateUnlockTime(Time.now(), newPeriod);
         let updatedStake = {
+            daoId = stake.daoId;
             id = stake.id;
             staker = stake.staker;
             amount = stake.amount;

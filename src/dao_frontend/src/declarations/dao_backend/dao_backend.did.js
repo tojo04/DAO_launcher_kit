@@ -4,6 +4,7 @@ export const idlFactory = ({ IDL }) => {
   const UserId = IDL.Principal;
   const Time = IDL.Int;
   const UserProfile = IDL.Record({
+    'daoId' : IDL.Principal,
     'id' : UserId,
     'bio' : IDL.Text,
     'displayName' : IDL.Text,
