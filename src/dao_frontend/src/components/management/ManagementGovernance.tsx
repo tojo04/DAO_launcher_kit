@@ -30,7 +30,7 @@ const ManagementGovernance: React.FC = () => {
 
   const loadProposals = async () => {
     try {
-      const res = await getAllProposals();
+      const res = await getAllProposals(dao.id);
       setProposals(res);
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -59,7 +59,7 @@ const ManagementGovernance: React.FC = () => {
     if (!title) return;
     const description = prompt('Proposal description') || '';
     try {
-      await createProposal(title, description);
+      await createProposal(dao.id, title, description);
       await loadProposals();
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -69,7 +69,7 @@ const ManagementGovernance: React.FC = () => {
 
   const handleVote = async (id: bigint, choice: 'inFavor' | 'against' | 'abstain') => {
     try {
-      await vote(id, choice);
+      await vote(dao.id, id, choice);
       await loadProposals();
     } catch (err) {
       // eslint-disable-next-line no-console

@@ -36,20 +36,20 @@ const ManagementTreasury: React.FC = () => {
   useEffect(() => {
     const fetchPrincipals = async () => {
       try {
-        const list = await getAuthorizedPrincipals();
+        const list = await getAuthorizedPrincipals(dao.id);
         setPrincipals(list);
       } catch (err) {
         console.error(err);
       }
     };
     fetchPrincipals();
-  }, [getAuthorizedPrincipals]);
+  }, [dao.id, getAuthorizedPrincipals]);
 
   const handleAdd = async () => {
     if (!newPrincipal.trim()) return;
     try {
-      await addAuthorizedPrincipal(newPrincipal.trim());
-      const list = await getAuthorizedPrincipals();
+      await addAuthorizedPrincipal(dao.id, newPrincipal.trim());
+      const list = await getAuthorizedPrincipals(dao.id);
       setPrincipals(list);
       setNewPrincipal('');
     } catch (err) {
@@ -59,8 +59,8 @@ const ManagementTreasury: React.FC = () => {
 
   const handleRemove = async (principal: string) => {
     try {
-      await removeAuthorizedPrincipal(principal);
-      const list = await getAuthorizedPrincipals();
+      await removeAuthorizedPrincipal(dao.id, principal);
+      const list = await getAuthorizedPrincipals(dao.id);
       setPrincipals(list);
     } catch (err) {
       console.error(err);

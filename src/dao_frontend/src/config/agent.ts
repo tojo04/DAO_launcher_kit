@@ -168,6 +168,7 @@ const handleOptionalActor = async <T>(
 
 export const initializeAgents = async (
   canisterIds: CanisterIds,
+  daoId: string,
   identity?: Identity
 ): Promise<Actors> => {
   try {
@@ -185,7 +186,7 @@ export const initializeAgents = async (
     );
 
     const governance = await handleOptionalActor<GovernanceService>(
-      canisterIds.governance,
+      canisterIds.governance || daoId,
       governanceIdl,
       "GOVERNANCE",
       identity

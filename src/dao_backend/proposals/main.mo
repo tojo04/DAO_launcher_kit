@@ -18,6 +18,16 @@ persistent actor ProposalsCanister {
     type Vote = Types.Vote;
     type ProposalId = Types.ProposalId;
     type GovernanceConfig = Types.GovernanceConfig;
+    type DAOId = Types.Principal;
+    type ProposalKey = (DAOId, ProposalId);
+
+    private func eqProposalKey(x : ProposalKey, y : ProposalKey) : Bool {
+        Principal.equal(x.0, y.0) and x.1 == y.1
+    };
+
+    private func hashProposalKey(k : ProposalKey) : Nat32 {
+        Text.hash(Principal.toText(k.0) # "_" # Nat.toText(k.1))
+    };
 
     // Proposal template types
     public type ProposalTemplate = {
@@ -39,14 +49,14 @@ persistent actor ProposalsCanister {
     // Stable storage for upgrades
     private var nextProposalId : Nat = 1;
     private var nextTemplateId : Nat = 1;
-    private var proposalsEntries : [(ProposalId, Proposal)] = [];
-    private var votesEntries : [(Text, Vote)] = []; // Key: proposalId_voter
+    private var proposalsEntries : [(ProposalKey, Proposal)] = [];
+    private var votesEntries : [(Text, Vote)] = []; // Key: daoId_proposalId_voter
     private var templatesEntries : [(Nat, ProposalTemplate)] = [];
     private var categoriesEntries : [(Text, ProposalCategory)] = [];
     private var configEntries : [(Text, GovernanceConfig)] = [];
 
     // Runtime storage
-    private transient var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
+    private transient var proposals = HashMap.HashMap<ProposalKey, Proposal>(10, eqProposalKey, hashProposalKey);
     private transient var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
     private transient var templates = HashMap.HashMap<Nat, ProposalTemplate>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
     private transient var categories = HashMap.HashMap<Text, ProposalCategory>(10, Text.equal, Text.hash);
@@ -132,11 +142,11 @@ persistent actor ProposalsCanister {
     };
 
     system func postupgrade() {
-        proposals := HashMap.fromIter<ProposalId, Proposal>(
-            proposalsEntries.vals(), 
-            proposalsEntries.size(), 
-            Nat.equal, 
-            func(n: Nat) : Nat32 { Nat32.fromNat(n) }
+        proposals := HashMap.fromIter<ProposalKey, Proposal>(
+            proposalsEntries.vals(),
+            proposalsEntries.size(),
+            eqProposalKey,
+            hashProposalKey
         );
         votes := HashMap.fromIter<Text, Vote>(
             votesEntries.vals(), 
@@ -192,7 +202,7 @@ persistent actor ProposalsCanister {
         let caller = msg.caller;
         
         // Check if user has too many active proposals
-        let activeProposals = getActiveProposalsByUser(caller);
+        let activeProposals = getActiveProposalsByUser(daoId, caller);
         let currentConfig = switch (config.get("default")) {
             case (?c) c;
             case null return #err("Configuration not found");
@@ -228,7 +238,7 @@ persistent actor ProposalsCanister {
             approvalThreshold = currentConfig.approvalThreshold;
         };
 
-        proposals.put(proposalId, proposal);
+        proposals.put((daoId, proposalId), proposal);
         #ok(proposalId)
     };
 
@@ -293,7 +303,7 @@ persistent actor ProposalsCanister {
         reason: ?Text
     ) : async Result<(), Text> {
         let caller = msg.caller;
-        let voteKey = Nat.toText(proposalId) # "_" # Principal.toText(caller);
+        let voteKey = Principal.toText(daoId) # "_" # Nat.toText(proposalId) # "_" # Principal.toText(caller);
 
         // Check if already voted
         switch (votes.get(voteKey)) {
@@ -302,7 +312,7 @@ persistent actor ProposalsCanister {
         };
 
         // Get proposal
-        let proposal = switch (proposals.get(proposalId)) {
+        let proposal = switch (proposals.get((daoId, proposalId))) {
             case (?p) p;
             case null return #err("Proposal not found");
         };
@@ -401,42 +411,54 @@ persistent actor ProposalsCanister {
             };
         };
 
-        proposals.put(proposalId, updatedProposal);
+        proposals.put((daoId, proposalId), updatedProposal);
         #ok()
     };
 
     // Query functions
 
     // Get proposal by ID
-    public query func getProposal(proposalId: ProposalId) : async ?Proposal {
-        proposals.get(proposalId)
+    public query func getProposal(daoId: Principal, proposalId: ProposalId) : async ?Proposal {
+        proposals.get((daoId, proposalId))
     };
 
     // Get all proposals
-    public query func getAllProposals() : async [Proposal] {
-        Iter.toArray(proposals.vals())
+    public query func getAllProposals(daoId: Principal) : async [Proposal] {
+        let filtered = Buffer.Buffer<Proposal>(0);
+        for (proposal in proposals.vals()) {
+            if (proposal.daoId == daoId) {
+                filtered.add(proposal);
+            };
+        };
+        Buffer.toArray(filtered)
     };
 
     // Get proposals by category
-    public query func getProposalsByCategory(category: Text) : async [Proposal] {
+    public query func getProposalsByCategory(daoId: Principal, category: Text) : async [Proposal] {
         let filteredProposals = Buffer.Buffer<Proposal>(0);
-        // For now, we'll return all proposals since we don't store category in proposal
-        // In a real implementation, you'd add category field to Proposal type
+        // Category filtering not implemented yet; return all proposals for DAO
         for (proposal in proposals.vals()) {
-            filteredProposals.add(proposal);
+            if (proposal.daoId == daoId) {
+                filteredProposals.add(proposal);
+            };
         };
         Buffer.toArray(filteredProposals)
     };
 
     // Get trending proposals (by vote activity)
-    public query func getTrendingProposals(limit: Nat) : async [Proposal] {
-        let allProposals = Iter.toArray(proposals.vals());
-        let sortedProposals = Array.sort(allProposals, func(a: Proposal, b: Proposal) : {#less; #equal; #greater} {
+    public query func getTrendingProposals(daoId: Principal, limit: Nat) : async [Proposal] {
+        let allProposals = Buffer.Buffer<Proposal>(0);
+        for (proposal in proposals.vals()) {
+            if (proposal.daoId == daoId) {
+                allProposals.add(proposal);
+            };
+        };
+        let sortedProposals = Array.sort(Buffer.toArray(allProposals), func(a: Proposal, b: Proposal) : {#less; #equal; #greater} {
             if (a.totalVotingPower > b.totalVotingPower) #less
             else if (a.totalVotingPower < b.totalVotingPower) #greater
             else #equal
         });
-        
+
         if (sortedProposals.size() <= limit) {
             sortedProposals
         } else {
@@ -445,22 +467,22 @@ persistent actor ProposalsCanister {
     };
 
     // Get proposal templates
-    public query func getProposalTemplates() : async [ProposalTemplate] {
+    public query func getProposalTemplates(_daoId: Principal) : async [ProposalTemplate] {
         Iter.toArray(templates.vals())
     };
 
     // Get proposal categories
-    public query func getProposalCategories() : async [ProposalCategory] {
+    public query func getProposalCategories(_daoId: Principal) : async [ProposalCategory] {
         Iter.toArray(categories.vals())
     };
 
     // Get template by ID
-    public query func getTemplate(templateId: Nat) : async ?ProposalTemplate {
+    public query func getTemplate(_daoId: Principal, templateId: Nat) : async ?ProposalTemplate {
         templates.get(templateId)
     };
 
     // Get templates by category
-    public query func getTemplatesByCategory(category: Text) : async [ProposalTemplate] {
+    public query func getTemplatesByCategory(_daoId: Principal, category: Text) : async [ProposalTemplate] {
         let filteredTemplates = Buffer.Buffer<ProposalTemplate>(0);
         for (template in templates.vals()) {
             if (template.category == category) {
@@ -474,6 +496,7 @@ persistent actor ProposalsCanister {
 
     // Add new template
     public shared(_msg) func addTemplate(
+        _daoId: Principal,
         name: Text,
         description: Text,
         category: Text,
@@ -498,6 +521,7 @@ persistent actor ProposalsCanister {
 
     // Add new category
     public shared(_msg) func addCategory(
+        _daoId: Principal,
         id: Text,
         name: Text,
         description: Text,
@@ -515,10 +539,10 @@ persistent actor ProposalsCanister {
     };
 
     // Helper functions
-    private func getActiveProposalsByUser(user: Principal) : [Proposal] {
+    private func getActiveProposalsByUser(daoId: Principal, user: Principal) : [Proposal] {
         let userProposals = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
-            if (proposal.proposer == user and proposal.status == #active) {
+            if (proposal.daoId == daoId and proposal.proposer == user and proposal.status == #active) {
                 userProposals.add(proposal);
             };
         };
@@ -526,7 +550,7 @@ persistent actor ProposalsCanister {
     };
 
     // Get proposal statistics
-    public query func getProposalStats() : async {
+    public query func getProposalStats(daoId: Principal) : async {
         totalProposals: Nat;
         activeProposals: Nat;
         succeededProposals: Nat;
@@ -538,23 +562,34 @@ persistent actor ProposalsCanister {
         var activeCount = 0;
         var succeededCount = 0;
         var failedCount = 0;
+        var total = 0;
+        var voteCount = 0;
 
         for (proposal in proposals.vals()) {
-            switch (proposal.status) {
-                case (#active) activeCount += 1;
-                case (#succeeded) succeededCount += 1;
-                case (#executed) succeededCount += 1;
-                case (#failed) failedCount += 1;
-                case (_) {};
+            if (proposal.daoId == daoId) {
+                total += 1;
+                switch (proposal.status) {
+                    case (#active) activeCount += 1;
+                    case (#succeeded) succeededCount += 1;
+                    case (#executed) succeededCount += 1;
+                    case (#failed) failedCount += 1;
+                    case (_) {};
+                };
+            };
+        };
+
+        for (vote in votes.vals()) {
+            if (vote.daoId == daoId) {
+                voteCount += 1;
             };
         };
 
         {
-            totalProposals = proposals.size();
+            totalProposals = total;
             activeProposals = activeCount;
             succeededProposals = succeededCount;
             failedProposals = failedCount;
-            totalVotes = votes.size();
+            totalVotes = voteCount;
             totalTemplates = templates.size();
             totalCategories = categories.size();
         }

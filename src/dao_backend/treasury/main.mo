@@ -50,22 +50,21 @@ persistent actor TreasuryCanister {
     private var nextTransactionId : Nat = 1;
     private var transactionsEntries : [(Nat, TreasuryTransaction)] = [];
     private var allowancesEntries : [(Principal, TokenAmount)] = [];
+    private var authorizedPrincipalsEntries : [(Principal, [Principal])] = [];
 
     // Runtime storage - rebuilt from stable storage after upgrades
     // HashMaps provide efficient transaction and allowance management
     private transient var balances = HashMap.HashMap<Principal, TreasuryBalance>(10, Principal.equal, Principal.hash);
     private transient var transactions = HashMap.HashMap<Nat, TreasuryTransaction>(100, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
     private transient var allowances = HashMap.HashMap<Principal, TokenAmount>(10, Principal.equal, Principal.hash);
-
-    // Authorization system for treasury operations
-    // In production, this would be managed by governance proposals
-    private var authorizedPrincipals : [Principal] = [];
+    private transient var authorizedPrincipals = HashMap.HashMap<Principal, [Principal]>(10, Principal.equal, Principal.hash);
 
     // System functions for upgrades
     system func preupgrade() {
         balancesEntries := Iter.toArray(balances.entries());
         transactionsEntries := Iter.toArray(transactions.entries());
         allowancesEntries := Iter.toArray(allowances.entries());
+        authorizedPrincipalsEntries := Iter.toArray(authorizedPrincipals.entries());
     };
 
     system func postupgrade() {
@@ -84,6 +83,12 @@ persistent actor TreasuryCanister {
         allowances := HashMap.fromIter<Principal, TokenAmount>(
             allowancesEntries.vals(),
             allowancesEntries.size(),
+            Principal.equal,
+            Principal.hash
+        );
+        authorizedPrincipals := HashMap.fromIter<Principal, [Principal]>(
+            authorizedPrincipalsEntries.vals(),
+            authorizedPrincipalsEntries.size(),
             Principal.equal,
             Principal.hash
         );
@@ -137,7 +142,7 @@ persistent actor TreasuryCanister {
         let caller = msg.caller;
 
         // Check authorization
-        if (not isAuthorized(caller)) {
+        if (not isAuthorized(daoId, caller)) {
             return #err("Not authorized to withdraw from treasury");
         };
 
@@ -212,7 +217,7 @@ persistent actor TreasuryCanister {
     // Lock tokens for specific purposes (e.g., staking rewards)
     public shared(msg) func lockTokens(daoId: Principal, amount: TokenAmount, reason: Text) : async Result<(), Text> {
 
-        if (not isAuthorized(msg.caller)) {
+        if (not isAuthorized(daoId, msg.caller)) {
             return #err("Not authorized");
         };
 
@@ -247,7 +252,7 @@ persistent actor TreasuryCanister {
 
     // Unlock tokens
     public shared(msg) func unlockTokens(daoId: Principal, amount: TokenAmount, reason: Text) : async Result<(), Text> {
-        if (not isAuthorized(msg.caller)) {
+        if (not isAuthorized(daoId, msg.caller)) {
             return #err("Not authorized");
         };
 
@@ -282,7 +287,7 @@ persistent actor TreasuryCanister {
 
     // Reserve tokens for future use
     public shared(msg) func reserveTokens(daoId: Principal, amount: TokenAmount, reason: Text) : async Result<(), Text> {
-        if (not isAuthorized(msg.caller)) {
+        if (not isAuthorized(daoId, msg.caller)) {
             return #err("Not authorized");
         };
 
@@ -317,7 +322,7 @@ persistent actor TreasuryCanister {
 
     // Release reserved tokens
     public shared(msg) func releaseReservedTokens(daoId: Principal, amount: TokenAmount, reason: Text) : async Result<(), Text> {
-        if (not isAuthorized(msg.caller)) {
+        if (not isAuthorized(daoId, msg.caller)) {
             return #err("Not authorized");
         };
 
@@ -474,24 +479,40 @@ persistent actor TreasuryCanister {
     // Administrative functions
 
     // Add authorized principal
-    public shared(_msg) func addAuthorizedPrincipal(principal: Principal) : async Result<(), Text> {
+    public shared(_msg) func addAuthorizedPrincipal(daoId: Principal, principal: Principal) : async Result<(), Text> {
         // In real implementation, only governance or admin should be able to do this
-        let principals = Buffer.fromArray<Principal>(authorizedPrincipals);
+        let principals = Buffer.fromArray<Principal>(
+            switch (authorizedPrincipals.get(daoId)) {
+                case (?arr) arr;
+                case null [];
+            }
+        );
         principals.add(principal);
-        authorizedPrincipals := Buffer.toArray(principals);
+        authorizedPrincipals.put(daoId, Buffer.toArray(principals));
         #ok()
     };
 
     // Remove authorized principal
-    public shared(_msg) func removeAuthorizedPrincipal(principal: Principal) : async Result<(), Text> {
+    public shared(_msg) func removeAuthorizedPrincipal(daoId: Principal, principal: Principal) : async Result<(), Text> {
         // In real implementation, only governance or admin should be able to do this
-        authorizedPrincipals := Array.filter<Principal>(authorizedPrincipals, func(p) = p != principal);
+        let updated = switch (authorizedPrincipals.get(daoId)) {
+            case (?arr) Array.filter<Principal>(arr, func(p) = p != principal);
+            case null [];
+        };
+        if (updated.size() == 0) {
+            authorizedPrincipals.remove(daoId);
+        } else {
+            authorizedPrincipals.put(daoId, updated);
+        };
         #ok()
     };
 
     // Get authorized principals
-    public query func getAuthorizedPrincipals() : async [Principal] {
-        authorizedPrincipals
+    public query func getAuthorizedPrincipals(daoId: Principal) : async [Principal] {
+        switch (authorizedPrincipals.get(daoId)) {
+            case (?arr) arr;
+            case null [];
+        }
     };
 
     // Helper functions
@@ -511,8 +532,11 @@ persistent actor TreasuryCanister {
         }
     };
 
-    private func isAuthorized(principal: Principal) : Bool {
-        Array.find<Principal>(authorizedPrincipals, func(p) = p == principal) != null
+    private func isAuthorized(daoId: Principal, principal: Principal) : Bool {
+        switch (authorizedPrincipals.get(daoId)) {
+            case (?arr) { Array.find<Principal>(arr, func(p) = p == principal) != null };
+            case null { false };
+        }
     };
 
     private func executeWithdrawal(_transactionId: Nat) : async Result<(), Text> {

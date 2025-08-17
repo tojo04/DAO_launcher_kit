@@ -65,15 +65,20 @@ persistent actor GovernanceCanister {
 
     // Inter-canister communication setup
     // Actor reference for staking canister
+
     var staking : actor {
         getUserStakingSummary: shared query (Principal, Principal) -> async {
+
             totalStaked: Nat;
             totalRewards: Nat;
             activeStakes: Nat;
             totalVotingPower: Nat;
         };
 
+    } = actor("aaaaa-aa");
+
     // Inter-canister communication setup
+
     // These actor references enable cross-canister calls for governance functionality
     var dao : actor {
         getUserProfile: shared query (Types.DAOId, Principal) -> async ?Types.UserProfile;
