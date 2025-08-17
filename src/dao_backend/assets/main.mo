@@ -64,7 +64,7 @@ persistent actor AssetCanister {
     // Stable storage for upgrades
     private var nextAssetId : Nat = 1;
     private var assetsEntries : [(AssetKey, Asset)] = [];
-    private var authorizedUploaders : [Principal] = [];
+    private var authorizedUploadersEntries : [(DaoId, [Principal])] = [];
     private var maxFileSize : Nat = 10_000_000; // 10MB default
     private var maxTotalStorage : Nat = 1_000_000_000; // 1GB default
     private var currentStorageUsed : Nat = 0;
@@ -94,6 +94,7 @@ persistent actor AssetCanister {
 
     private transient var assets = HashMap.HashMap<AssetKey, Asset>(100, assetKeyEqual, assetKeyHash);
     private transient var uploaderAssets = HashMap.HashMap<UploaderKey, [AssetId]>(50, uploaderKeyEqual, uploaderKeyHash);
+    private transient var authorizedUploaders = HashMap.HashMap<DaoId, [Principal]>(50, Text.equal, Text.hash);
 
     // Supported content types
     private transient let supportedTypes = [
@@ -113,15 +114,14 @@ persistent actor AssetCanister {
     // authorized uploaders starts empty and can be populated later via
     // `addAuthorizedUploader`.
     public shared ({caller = _}) func init(initialUploader : ?Principal, openUploads : Bool) : async () {
-        switch (initialUploader) {
-            case (?p) { authorizedUploaders := [p] };
-            case null {};
-        };
+        // Initial uploader is no longer supported in DAO-specific uploader maps.
+        switch (initialUploader) { case (?_) {}; case null {} }; 
         allowOpenUploads := openUploads;
     };
 
     system func preupgrade() {
         assetsEntries := Iter.toArray(assets.entries());
+        authorizedUploadersEntries := Iter.toArray(authorizedUploaders.entries());
     };
 
     system func postupgrade() {
@@ -130,6 +130,13 @@ persistent actor AssetCanister {
             assetsEntries.size(),
             assetKeyEqual,
             assetKeyHash
+        );
+
+        authorizedUploaders := HashMap.fromIter<DaoId, [Principal]>(
+            authorizedUploadersEntries.vals(),
+            authorizedUploadersEntries.size(),
+            Text.equal,
+            Text.hash
         );
 
         // Rebuild uploader assets mapping
@@ -158,11 +165,15 @@ persistent actor AssetCanister {
         tags: [Text]
     ) : async Result<AssetId, Text> {
         let caller = msg.caller;
-        if (authorizedUploaders.size() == 0) {
+        let daoUploaders = switch (authorizedUploaders.get(daoId)) {
+            case (?ups) ups;
+            case null [];
+        };
+        if (daoUploaders.size() == 0) {
             if (not allowOpenUploads) {
                 return #err("Uploads are disabled until an uploader is authorized or open uploads are enabled");
             };
-        } else if (not isAuthorized(caller)) {
+        } else if (not isAuthorized(daoId, caller)) {
             return #err("Not authorized to upload assets");
         };
         let dataSize = data.size();
@@ -231,7 +242,7 @@ persistent actor AssetCanister {
         switch (assets.get(key)) {
             case (?asset) {
                 // Check access permissions
-                if (asset.isPublic or asset.uploadedBy == caller or isAuthorized(caller)) {
+                if (asset.isPublic or asset.uploadedBy == caller or isAuthorized(daoId, caller)) {
                     #ok(asset)
                 } else {
                     #err("Not authorized to access this asset")
@@ -347,7 +358,7 @@ persistent actor AssetCanister {
         switch (assets.get(key)) {
             case (?asset) {
                 // Check if user owns the asset or is authorized
-                if (asset.uploadedBy == caller or isAuthorized(caller)) {
+                if (asset.uploadedBy == caller or isAuthorized(daoId, caller)) {
                     assets.delete(key);
                     currentStorageUsed -= asset.size;
 
@@ -383,7 +394,7 @@ persistent actor AssetCanister {
 
         switch (assets.get(key)) {
             case (?asset) {
-                if (asset.uploadedBy == caller or isAuthorized(caller)) {
+                if (asset.uploadedBy == caller or isAuthorized(daoId, caller)) {
                     let updatedAsset = {
                         id = asset.id;
                         daoId = asset.daoId;
@@ -443,42 +454,52 @@ persistent actor AssetCanister {
     // Administrative functions
 
     // Add authorized uploader
-    public shared(msg) func addAuthorizedUploader(principal: Principal) : async Result<(), Text> {
+    public shared(msg) func addAuthorizedUploader(daoId: DaoId, principal: Principal) : async Result<(), Text> {
+        let caller = msg.caller;
+        let uploaders = switch (authorizedUploaders.get(daoId)) {
+            case (?u) u;
+            case null [];
+        };
         // Allow the first uploader to be added by anyone when the list is empty.
-        if (authorizedUploaders.size() > 0 and not isAuthorized(msg.caller)) {
+        if (uploaders.size() > 0 and not isAuthorized(daoId, caller)) {
             return #err("Not authorized to add uploaders");
         };
 
-        if (isAuthorized(principal)) {
+        if (Array.find<Principal>(uploaders, func(p) = p == principal) != null) {
             return #err("Uploader already authorized");
         };
 
-        let principals = Buffer.fromArray<Principal>(authorizedUploaders);
-        principals.add(principal);
-        authorizedUploaders := Buffer.toArray(principals);
+        let updated = Array.append<Principal>(uploaders, [principal]);
+        authorizedUploaders.put(daoId, updated);
 
         Debug.print("Authorized uploader added: " # Principal.toText(principal));
         #ok()
     };
 
     // Remove authorized uploader
-    public shared(msg) func removeAuthorizedUploader(principal: Principal) : async Result<(), Text> {
-        if (not isAuthorized(msg.caller)) {
+    public shared(msg) func removeAuthorizedUploader(daoId: DaoId, principal: Principal) : async Result<(), Text> {
+        if (not isAuthorized(daoId, msg.caller)) {
             return #err("Not authorized to remove uploaders");
         };
 
-        authorizedUploaders := Array.filter<Principal>(authorizedUploaders, func(p) = p != principal);
-        
+        let uploaders = switch (authorizedUploaders.get(daoId)) {
+            case (?u) u;
+            case null [];
+        };
+        let updated = Array.filter<Principal>(uploaders, func(p) = p != principal);
+        authorizedUploaders.put(daoId, updated);
+
         Debug.print("Authorized uploader removed: " # Principal.toText(principal));
         #ok()
     };
 
     // Update storage limits
     public shared(msg) func updateStorageLimits(
+        daoId: DaoId,
         maxFileSizeNew: ?Nat,
         maxTotalStorageNew: ?Nat
     ) : async Result<(), Text> {
-        if (not isAuthorized(msg.caller)) {
+        if (not isAuthorized(daoId, msg.caller)) {
             return #err("Not authorized to update storage limits");
         };
 
@@ -501,13 +522,19 @@ persistent actor AssetCanister {
     };
 
     // Get authorized uploaders
-    public query func getAuthorizedUploaders() : async [Principal] {
-        authorizedUploaders
+    public query func getAuthorizedUploaders(daoId: DaoId) : async [Principal] {
+        switch (authorizedUploaders.get(daoId)) {
+            case (?u) u;
+            case null [];
+        }
     };
 
     // Helper functions
-    private func isAuthorized(principal: Principal) : Bool {
-        Array.find<Principal>(authorizedUploaders, func(p) = p == principal) != null
+    private func isAuthorized(daoId: DaoId, principal: Principal) : Bool {
+        switch (authorizedUploaders.get(daoId)) {
+            case (?u) { Array.find<Principal>(u, func(p) = p == principal) != null };
+            case null false;
+        }
     };
 
     // Health check

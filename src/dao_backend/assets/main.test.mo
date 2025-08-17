@@ -17,18 +17,18 @@ actor {
         let uploadBefore = await Asset.uploadAsset(daoId, "test", "image/png", data, true, []);
         assert uploadBefore == #err("Uploads are disabled until an uploader is authorized or open uploads are enabled");
 
-        // Anyone can authorize the first uploader.
-        let res = await Asset.addAuthorizedUploader(selfPrincipal);
+        // Anyone can authorize the first uploader for a DAO.
+        let res = await Asset.addAuthorizedUploader(daoId, selfPrincipal);
         assert res == #ok();
 
-        let uploaders = await Asset.getAuthorizedUploaders();
+        let uploaders = await Asset.getAuthorizedUploaders(daoId);
         assert Array.find<Principal>(uploaders, func(p) = p == selfPrincipal) != null;
 
         // After authorization, upload succeeds.
         let uploadAfter = await Asset.uploadAsset(daoId, "test2", "image/png", data, true, []);
         switch uploadAfter { case (#ok(_)) {}; case (_) { assert false } };
 
-        let duplicateRes = await Asset.addAuthorizedUploader(selfPrincipal);
+        let duplicateRes = await Asset.addAuthorizedUploader(daoId, selfPrincipal);
         assert duplicateRes == #err("Uploader already authorized");
 
         Debug.print("initial uploader configuration and upload permission test passed");

@@ -43,7 +43,7 @@ type Asset =
    uploadedBy: principal;
  };
 service : {
- addAuthorizedUploader: ("principal": principal) -> (Result_1);
+ addAuthorizedUploader: (daoId: DaoId, "principal": principal) -> (Result_1);
  batchUploadAssets: (daoId: DaoId, assets_data:
   vec record {
         text;
@@ -56,7 +56,7 @@ service : {
  getAsset: (daoId: DaoId, assetId: AssetId) -> (Result_2);
  getAssetByName: (daoId: DaoId, name: text) -> (opt AssetMetadata) query;
  getAssetMetadata: (daoId: DaoId, assetId: AssetId) -> (opt AssetMetadata) query;
- getAuthorizedUploaders: () -> (vec principal) query;
+ getAuthorizedUploaders: (daoId: DaoId) -> (vec principal) query;
  getPublicAssets: (daoId: DaoId) -> (vec AssetMetadata) query;
  getStorageStats: (daoId: DaoId) ->
   (record {
@@ -75,11 +75,11 @@ service : {
      timestamp: Time;
    }) query;
  init: (initialUploader: opt principal, openUploads: bool) -> ();
- removeAuthorizedUploader: ("principal": principal) -> (Result_1);
+ removeAuthorizedUploader: (daoId: DaoId, "principal": principal) -> (Result_1);
  searchAssetsByTag: (daoId: DaoId, tag: text) -> (vec AssetMetadata) query;
  updateAssetMetadata: (daoId: DaoId, assetId: AssetId, name: opt text, isPublic: opt bool,
   tags: opt vec text) -> (Result_1);
- updateStorageLimits: (maxFileSizeNew: opt nat, maxTotalStorageNew:
+ updateStorageLimits: (daoId: DaoId, maxFileSizeNew: opt nat, maxTotalStorageNew:
   opt nat) -> (Result_1);
  uploadAsset: (daoId: DaoId, name: text, contentType: text, data: AssetData, isPublic:
   bool, tags: vec text) -> (Result);

@@ -27,7 +27,7 @@ const ManagementAssetsAdmin: React.FC = () => {
   const loadData = async () => {
     try {
       const [uploaderList, storageStats] = await Promise.all([
-        getAuthorizedUploaders(),
+        getAuthorizedUploaders(daoId),
         getStorageStats(daoId),
       ]);
       setUploaders(uploaderList);
@@ -46,7 +46,7 @@ const ManagementAssetsAdmin: React.FC = () => {
     setMessage('');
     setError('');
     try {
-      await addAuthorizedUploader(newUploader);
+      await addAuthorizedUploader(daoId, newUploader);
       setMessage('Uploader added successfully');
       setNewUploader('');
       await loadData();
@@ -59,7 +59,7 @@ const ManagementAssetsAdmin: React.FC = () => {
     setMessage('');
     setError('');
     try {
-      await removeAuthorizedUploader(principal);
+      await removeAuthorizedUploader(daoId, principal);
       setMessage('Uploader removed successfully');
       await loadData();
     } catch (err: any) {
@@ -73,7 +73,7 @@ const ManagementAssetsAdmin: React.FC = () => {
     try {
       const maxFile = maxFileSize ? parseInt(maxFileSize, 10) : null;
       const maxTotal = maxTotalStorage ? parseInt(maxTotalStorage, 10) : null;
-      await updateStorageLimits(maxFile, maxTotal);
+      await updateStorageLimits(daoId, maxFile, maxTotal);
       setMessage('Storage limits updated');
       setMaxFileSize('');
       setMaxTotalStorage('');
