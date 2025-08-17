@@ -166,9 +166,10 @@ export class DAOAPIWrapper {
     }
 
     // Governance APIs (temporary implementations)
-    async getGovernanceStats() {
+    async getGovernanceStats(daoId) {
+        const id = daoId ?? 'default';
         return this.callAPI(
-            () => this.actors.daoBackend.getGovernanceStats(),
+            () => this.actors.daoBackend.getGovernanceStats(id),
             'Get Governance Statistics'
         );
     }

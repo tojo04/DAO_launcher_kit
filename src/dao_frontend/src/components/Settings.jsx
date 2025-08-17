@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useActors } from '../context/ActorContext';
+import { useDAO } from '../context/DAOContext';
 import { useNavigate } from 'react-router-dom';
 import BackgroundParticles from './BackgroundParticles';
 import { 
@@ -34,6 +35,7 @@ const Settings = () => {
   const { isAuthenticated, principal, userSettings, logout, loading } = useAuth();
   const actors = useActors();
   const daoBackend = actors?.daoBackend;
+  const { activeDAO } = useDAO();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [showPrincipal, setShowPrincipal] = useState(false);
@@ -81,7 +83,7 @@ const Settings = () => {
   };
 
   const handleSave = async () => {
-    if (!daoBackend) {
+    if (!daoBackend || !activeDAO?.id) {
       setSaveMessage('Backend unavailable');
       return;
     }
@@ -89,6 +91,7 @@ const Settings = () => {
     setIsSaving(true);
     try {
       const result = await daoBackend.updateUserProfile(
+        activeDAO.id,
         formData.displayName,
         formData.bio
       );
