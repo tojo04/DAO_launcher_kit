@@ -6,7 +6,7 @@ export const idlFactory = ({ IDL }) => {
   const Time = IDL.Int;
   const Asset = IDL.Record({
     'id' : AssetId,
-    'daoId' : IDL.Principal,
+    'daoId' : IDL.Text,
     'contentType' : IDL.Text,
     'data' : AssetData,
     'name' : IDL.Text,
@@ -19,7 +19,7 @@ export const idlFactory = ({ IDL }) => {
   const Result_2 = IDL.Variant({ 'ok' : Asset, 'err' : IDL.Text });
   const AssetMetadata = IDL.Record({
     'id' : AssetId,
-    'daoId' : IDL.Principal,
+    'daoId' : IDL.Text,
     'name' : IDL.Text,
     'contentType' : IDL.Text,
     'size' : IDL.Nat,
@@ -32,7 +32,7 @@ export const idlFactory = ({ IDL }) => {
     'addAuthorizedUploader' : IDL.Func([IDL.Principal], [Result_1], []),
     'batchUploadAssets' : IDL.Func(
         [
-          IDL.Principal,
+          IDL.Text,
           IDL.Vec(
             IDL.Tuple(
               IDL.Text,
@@ -46,15 +46,15 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(Result)],
         [],
       ),
-    'deleteAsset' : IDL.Func([IDL.Principal, AssetId], [Result_1], []),
-    'getAsset' : IDL.Func([IDL.Principal, AssetId], [Result_2], []),
+    'deleteAsset' : IDL.Func([IDL.Text, AssetId], [Result_1], []),
+    'getAsset' : IDL.Func([IDL.Text, AssetId], [Result_2], []),
     'getAssetByName' : IDL.Func(
-        [IDL.Principal, IDL.Text],
+        [IDL.Text, IDL.Text],
         [IDL.Opt(AssetMetadata)],
         ['query'],
       ),
     'getAssetMetadata' : IDL.Func(
-        [IDL.Principal, AssetId],
+        [IDL.Text, AssetId],
         [IDL.Opt(AssetMetadata)],
         ['query'],
       ),
@@ -63,9 +63,9 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Principal)],
         ['query'],
       ),
-    'getPublicAssets' : IDL.Func([IDL.Principal], [IDL.Vec(AssetMetadata)], ['query']),
+    'getPublicAssets' : IDL.Func([IDL.Text], [IDL.Vec(AssetMetadata)], ['query']),
     'getStorageStats' : IDL.Func(
-        [IDL.Principal],
+        [IDL.Text],
         [
           IDL.Record({
             'storageLimit' : IDL.Nat,
@@ -78,7 +78,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getSupportedContentTypes' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
-    'getUserAssets' : IDL.Func([IDL.Principal], [IDL.Vec(AssetMetadata)], []),
+    'getUserAssets' : IDL.Func([IDL.Text], [IDL.Vec(AssetMetadata)], []),
     'health' : IDL.Func(
         [],
         [
@@ -93,13 +93,13 @@ export const idlFactory = ({ IDL }) => {
     'init' : IDL.Func([IDL.Opt(IDL.Principal), IDL.Bool], [], []),
     'removeAuthorizedUploader' : IDL.Func([IDL.Principal], [Result_1], []),
     'searchAssetsByTag' : IDL.Func(
-        [IDL.Principal, IDL.Text],
+        [IDL.Text, IDL.Text],
         [IDL.Vec(AssetMetadata)],
         ['query'],
       ),
     'updateAssetMetadata' : IDL.Func(
         [
-          IDL.Principal,
+          IDL.Text,
           AssetId,
           IDL.Opt(IDL.Text),
           IDL.Opt(IDL.Bool),
@@ -114,7 +114,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'uploadAsset' : IDL.Func(
-        [IDL.Principal, IDL.Text, IDL.Text, AssetData, IDL.Bool, IDL.Vec(IDL.Text)],
+        [IDL.Text, IDL.Text, IDL.Text, AssetData, IDL.Bool, IDL.Vec(IDL.Text)],
         [Result],
         [],
       ),
