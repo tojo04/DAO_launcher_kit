@@ -475,9 +475,8 @@ persistent actor ProposalsCanister {
             throw Error.reject("Canister not initialized");
         };
         let filteredProposals = Buffer.Buffer<Proposal>(0);
-        // Category filtering not implemented yet; return all proposals for DAO
         for (proposal in proposals.vals()) {
-            if (proposal.daoId == daoId) {
+            if (proposal.daoId == daoId and proposal.category == ?category) {
                 filteredProposals.add(proposal);
             };
         };
