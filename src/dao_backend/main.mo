@@ -29,6 +29,7 @@ persistent actor DAOMain {
     type Proposal = Types.Proposal;
     type Vote = Types.Vote;
     type ProposalId = Types.ProposalId;
+    type VoteChoice = Types.VoteChoice;
     type Stake = Types.Stake;
     type StakeId = Types.StakeId;
     type TokenAmount = Types.TokenAmount;
@@ -462,21 +463,33 @@ persistent actor DAOMain {
         #ok(1) // Return dummy proposal ID
     };
 
-    // Temporary voting function (will delegate to proposals canister later)
+    // Voting function delegating to proposals canister
     public shared(msg) func vote(
         daoId: DAOId,
-        proposalId: Nat,
-        choice: Text,
-        _reason: ?Text
+        proposalId: ProposalId,
+        choice: VoteChoice,
+        reason: ?Text
     ) : async Result<(), Text> {
         if (not isRegisteredUser(daoId, msg.caller)) {
             return #err("Only registered users can vote");
         };
-        
-        // For now, just log the vote
-        // Later this will delegate to the proposals canister
-        Debug.print("Vote cast on proposal " # Nat.toText(proposalId) # ": " # choice);
-        #ok()
+
+        let state = ensureDAO(daoId);
+        switch (state.proposalsCanister) {
+            case null return #err("Proposals canister not configured");
+            case (?proposalsId) {
+                let proposals = actor(Principal.toText(proposalsId)) : actor {
+                    vote: shared (
+                        DAOId,
+                        Principal,
+                        ProposalId,
+                        VoteChoice,
+                        ?Text
+                    ) -> async Result<(), Text>;
+                };
+                await proposals.vote(daoId, msg.caller, proposalId, choice, reason)
+            };
+        }
     };
 
     // Utility functions
