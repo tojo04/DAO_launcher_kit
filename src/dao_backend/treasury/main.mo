@@ -729,6 +729,7 @@ persistent actor TreasuryCanister {
     };
 
     private func isAdmin(daoId: Principal, principal: Principal) : Bool {
+
         // For now, reuse the authorized principal list for admin checks
         isAuthorized(daoId, principal)
     };
