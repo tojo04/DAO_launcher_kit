@@ -526,52 +526,43 @@ persistent actor DAOMain {
     };
 
 
-    // Governance operations routed to dedicated canisters
-    public func getGovernanceStats(daoId: DAOId) : async {
+    // Governance operations
+    private type GovernanceStats = {
         totalProposals: Nat;
         activeProposals: Nat;
-        passedProposals: Nat;
-        totalVotingPower: Nat;
-    } {
+        succeededProposals: Nat;
+        failedProposals: Nat;
+        totalVotes: Nat;
+    };
+
+    private type GovernanceCanister = actor {
+        getGovernanceStats: shared query (Principal) -> async GovernanceStats;
+    };
+
+    public func getGovernanceStats(daoId: DAOId) : async GovernanceStats {
+        let defaultStats : GovernanceStats = {
+            totalProposals = 0;
+            activeProposals = 0;
+            succeededProposals = 0;
+            failedProposals = 0;
+            totalVotes = 0;
+        };
+
         switch (daoStates.get(daoId)) {
             case (?state) {
                 switch (state.governanceCanister) {
-                    case (?canisterId) {
-                        let governance : actor {
-                            getGovernanceStats : shared query (Principal) -> async {
-                                totalProposals: Nat;
-                                activeProposals: Nat;
-                                succeededProposals: Nat;
-                                failedProposals: Nat;
-                                totalVotes: Nat;
-                            };
-                        } = actor(Principal.toText(canisterId));
-                        let stats = await governance.getGovernanceStats(Principal.fromText(daoId));
-                        {
-                            totalProposals = stats.totalProposals;
-                            activeProposals = stats.activeProposals;
-                            passedProposals = stats.succeededProposals;
-                            totalVotingPower = stats.totalVotes;
+                    case (?govId) {
+                        let governance : GovernanceCanister = actor(Principal.toText(govId));
+                        try {
+                            await governance.getGovernanceStats(Principal.fromText(daoId))
+                        } catch (_) {
+                            defaultStats
                         }
                     };
-                    case null {
-                        {
-                            totalProposals = 0;
-                            activeProposals = 0;
-                            passedProposals = 0;
-                            totalVotingPower = 0;
-                        }
-                    };
+                    case null defaultStats;
                 }
             };
-            case null {
-                {
-                    totalProposals = 0;
-                    activeProposals = 0;
-                    passedProposals = 0;
-                    totalVotingPower = 0;
-                }
-            };
+            case null defaultStats;
         }
     };
 
