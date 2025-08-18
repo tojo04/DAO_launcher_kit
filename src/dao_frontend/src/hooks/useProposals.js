@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Principal } from '@dfinity/principal';
 import { useActors } from '../context/ActorContext';
 
 export const useProposals = () => {
@@ -18,6 +19,7 @@ export const useProposals = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const res = await actors.proposals.createProposal(
         daoId,
         title,
@@ -40,6 +42,7 @@ export const useProposals = () => {
     setLoading(true);
     setError(null);
     try {
+      
       return await actors.proposals.getAllProposals(daoId);
     } catch (err) {
       setError(err.message);
@@ -53,6 +56,7 @@ export const useProposals = () => {
     setLoading(true);
     setError(null);
     try {
+      
       return await actors.proposals.getProposalsByCategory(daoId, category);
     } catch (err) {
       setError(err.message);
@@ -66,6 +70,7 @@ export const useProposals = () => {
     setLoading(true);
     setError(null);
     try {
+      
       return await actors.proposals.getProposalTemplates(daoId);
     } catch (err) {
       setError(err.message);
@@ -79,6 +84,7 @@ export const useProposals = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const choiceVariant = { [choice]: null };
       const res = await actors.proposals.vote(
         daoId,

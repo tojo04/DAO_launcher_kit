@@ -194,7 +194,7 @@ export const initializeAgents = async (
         if (!principal) {
           throw new Error("Governance canister principal not found");
         }
-        governanceCanisterId = principal.toString();
+        governanceCanisterId = principal.toText();
       } catch (err) {
         console.error("Failed to retrieve governance canister ID:", err);
         throw new Error("Unable to retrieve governance canister principal");

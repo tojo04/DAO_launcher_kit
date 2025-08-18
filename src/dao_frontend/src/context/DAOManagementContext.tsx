@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Principal } from '@dfinity/principal';
 import { useAuth } from './AuthContext';
 import { DAO, DAOContextType } from '../types/dao';
 import type { Actors } from '../config/agent';
@@ -22,8 +23,25 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
     setError(null);
     try {
       // Create a default DAO using the deployed canister IDs from environment
+      const canisterIdEnv = import.meta.env.VITE_CANISTER_ID_DAO_BACKEND;
+      
+      // Convert canister ID to a valid Principal and use that as DAO ID
+      let daoId: string;
+      try {
+        if (canisterIdEnv && canisterIdEnv !== 'undefined') {
+          // Convert the canister ID to a proper Principal format
+          const principal = Principal.fromText(canisterIdEnv);
+          daoId = principal.toText();
+        } else {
+          daoId = 'dao-local-dev';
+        }
+      } catch (error) {
+        console.warn('Invalid canister ID format, using fallback:', error);
+        daoId = 'dao-local-dev';
+      }
+
       const defaultDAO: DAO = {
-        id: 'local-dao-1',
+        id: daoId,
         name: 'Local Development DAO',
         description: 'A DAO for local development and testing',
         tokenSymbol: 'LDAO',
@@ -45,12 +63,12 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
           apr: '0%',
         },
         canisterIds: {
-          daoBackend: import.meta.env.VITE_CANISTER_ID_DAO_BACKEND,
-          governance: import.meta.env.VITE_CANISTER_ID_GOVERNANCE,
-          staking: import.meta.env.VITE_CANISTER_ID_STAKING,
-          treasury: import.meta.env.VITE_CANISTER_ID_TREASURY,
-          proposals: import.meta.env.VITE_CANISTER_ID_PROPOSALS,
-          assets: import.meta.env.VITE_CANISTER_ID_ASSETS,
+          daoBackend: canisterIdEnv || 'rdmx6-jaaaa-aaaaa-aaadq-cai',
+          governance: import.meta.env.VITE_CANISTER_ID_GOVERNANCE || 'rrkah-fqaaa-aaaaa-aaaaq-cai',
+          staking: import.meta.env.VITE_CANISTER_ID_STAKING || 'ryjl3-tyaaa-aaaaa-aaaba-cai',
+          treasury: import.meta.env.VITE_CANISTER_ID_TREASURY || 'rdmx6-jaaaa-aaaaa-aaadq-cai',
+          proposals: import.meta.env.VITE_CANISTER_ID_PROPOSALS || 'rdmx6-jaaaa-aaaaa-aaadq-cai',
+          assets: import.meta.env.VITE_CANISTER_ID_ASSETS || 'rdmx6-jaaaa-aaaaa-aaadq-cai',
         },
       };
 

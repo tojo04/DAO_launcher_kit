@@ -12,8 +12,10 @@ export const useGovernance = () => {
   const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
 
   const getDaoId = () => {
-    if (!activeDAO?.id) throw new Error('No active DAO selected');
-    return activeDAO.id;
+    // Use the DAO backend canister ID as the DAO identifier
+    const daoBackendCanisterId = import.meta.env.VITE_CANISTER_ID_DAO_BACKEND;
+    if (!daoBackendCanisterId) throw new Error('DAO backend canister ID not found');
+    return daoBackendCanisterId;
   };
 
   const createProposal = async (

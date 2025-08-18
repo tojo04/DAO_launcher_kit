@@ -3,6 +3,8 @@
  * Provides consistent error handling and response formatting
  */
 
+import { Principal } from '@dfinity/principal';
+
 export class DAOAPIWrapper {
     constructor(actors) {
         this.actors = actors;
@@ -48,7 +50,8 @@ export class DAOAPIWrapper {
             console.error(error.message);
             throw error;
         }
-        return daoId;
+        // Convert Principal DAO ID to text string if needed (backend expects Text)
+        return typeof daoId === 'object' && daoId.toText ? daoId.toText() : daoId;
     }
 
     // DAO Management APIs

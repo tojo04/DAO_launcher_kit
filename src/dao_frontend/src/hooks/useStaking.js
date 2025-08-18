@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { Principal } from '@dfinity/principal';
 import { useActors } from '../context/ActorContext';
-
 export const useStaking = () => {
   const actors = useActors();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const stake = async (daoId, amount, period) => {
     setLoading(true);
     setError(null);
@@ -26,7 +24,6 @@ export const useStaking = () => {
       setLoading(false);
     }
   };
-
   const unstake = async (daoId, stakeId) => {
     setLoading(true);
     setError(null);
@@ -44,7 +41,6 @@ export const useStaking = () => {
       setLoading(false);
     }
   };
-
   const claimRewards = async (daoId, stakeId) => {
     setLoading(true);
     setError(null);
@@ -62,7 +58,6 @@ export const useStaking = () => {
       setLoading(false);
     }
   };
-
   const extendStakingPeriod = async (daoId, stakeId, newPeriod) => {
     setLoading(true);
     setError(null);
@@ -82,7 +77,6 @@ export const useStaking = () => {
       setLoading(false);
     }
   };
-
   const getStake = async (daoId, stakeId) => {
     setLoading(true);
     setError(null);
@@ -95,7 +89,6 @@ export const useStaking = () => {
       setLoading(false);
     }
   };
-
   const getStakingRewards = async (daoId, stakeId) => {
     setLoading(true);
     setError(null);
@@ -111,7 +104,6 @@ export const useStaking = () => {
       setLoading(false);
     }
   };
-
   const getStakingStats = async (daoId) => {
     setLoading(true);
     setError(null);
@@ -124,7 +116,6 @@ export const useStaking = () => {
       setLoading(false);
     }
   };
-
   const getUserStakes = async (daoId, user) => {
     setLoading(true);
     setError(null);
@@ -140,7 +131,6 @@ export const useStaking = () => {
       setLoading(false);
     }
   };
-
   const getUserActiveStakes = async (daoId, user) => {
     setLoading(true);
     setError(null);
@@ -156,7 +146,6 @@ export const useStaking = () => {
       setLoading(false);
     }
   };
-
   const getUserStakingSummary = async (daoId, user) => {
     setLoading(true);
     setError(null);
@@ -172,7 +161,6 @@ export const useStaking = () => {
       setLoading(false);
     }
   };
-
   const setMinimumStakeAmount = async (amount) => {
     setLoading(true);
     setError(null);
@@ -187,7 +175,6 @@ export const useStaking = () => {
       setLoading(false);
     }
   };
-
   const setMaximumStakeAmount = async (amount) => {
     setLoading(true);
     setError(null);
@@ -202,7 +189,6 @@ export const useStaking = () => {
       setLoading(false);
     }
   };
-
   const setStakingEnabled = async (enabled) => {
     setLoading(true);
     setError(null);
@@ -217,7 +203,6 @@ export const useStaking = () => {
       setLoading(false);
     }
   };
-
   return {
     stake,
     unstake,

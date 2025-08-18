@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
 
         if (isAuthenticated) {
           const currentIdentity = client.getIdentity();
-          const principalId = currentIdentity.getPrincipal().toString();
+          const principalId = currentIdentity.getPrincipal().toText();
           const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);
@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }) => {
           const principal = currentIdentity.getPrincipal();
 
 
-          const principalId = principal.toString();
+          const principalId = principal.toText();
           const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);

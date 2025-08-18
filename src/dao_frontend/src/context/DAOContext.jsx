@@ -16,6 +16,13 @@ export const DAOProvider = ({ children }) => {
   const [userDAOs, setUserDAOs] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Sync activeDAO with selectedDAO from DAOManagementContext
+  useEffect(() => {
+    if (selectedDAO && !activeDAO) {
+      setActiveDAO(selectedDAO);
+    }
+  }, [selectedDAO, activeDAO]);
+
   // Check if user has any DAOs when authenticated
   useEffect(() => {
     if (isAuthenticated && principal) {

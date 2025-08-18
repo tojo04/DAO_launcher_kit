@@ -11,10 +11,12 @@ export const useAssets = () => {
     setLoading(true);
     setError(null);
     try {
+      // Convert daoId to Principal if it's a string
+      const daoPrincipal = typeof daoId === 'string' ? Principal.fromText(daoId) : daoId;
       const arrayBuffer = await file.arrayBuffer();
       const data = Array.from(new Uint8Array(arrayBuffer));
       const result = await actors.assets.uploadAsset(
-        daoId,
+        daoPrincipal,
         file.name,
         file.type,
         data,
@@ -37,8 +39,10 @@ export const useAssets = () => {
     setLoading(true);
     setError(null);
     try {
+      // Convert daoId to Principal if it's a string
+      const daoPrincipal = typeof daoId === 'string' ? Principal.fromText(daoId) : daoId;
       const res = await actors.assets.getAsset(
-        daoId,
+        daoPrincipal,
         BigInt(assetId)
       );
       if (res.err) {

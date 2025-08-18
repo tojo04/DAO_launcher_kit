@@ -51,6 +51,7 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const result = await actors.treasury.lockTokens(
         daoId,
         BigInt(amount),
@@ -69,6 +70,7 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const result = await actors.treasury.unlockTokens(
         daoId,
         BigInt(amount),
@@ -87,6 +89,7 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const result = await actors.treasury.reserveTokens(
         daoId,
         BigInt(amount),
@@ -105,6 +108,7 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const result = await actors.treasury.releaseReservedTokens(
         daoId,
         BigInt(amount),
@@ -123,6 +127,7 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const res = await actors.treasury.getBalance(daoId);
       if ('err' in res) throw new Error(res.err);
       return 'ok' in res ? res.ok : res;
@@ -138,6 +143,7 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const txs = await actors.treasury.getAllTransactions(daoId);
       return txs;
     } catch (err) {
@@ -152,6 +158,7 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const txs = await actors.treasury.getTransactionsByType(daoId, {
         [type]: null,
       });
@@ -168,6 +175,7 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const txs = await actors.treasury.getRecentTransactions(
         daoId,
         BigInt(limit)
@@ -185,6 +193,7 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const stats = await actors.treasury.getTreasuryStats(daoId);
       return stats;
     } catch (err) {
@@ -199,6 +208,7 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const res = await actors.treasury.addAuthorizedPrincipal(
         daoId,
         Principal.fromText(principalId)
@@ -217,6 +227,7 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const res = await actors.treasury.removeAuthorizedPrincipal(
         daoId,
         Principal.fromText(principalId)
@@ -235,6 +246,7 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
+      
       const res = await actors.treasury.getAuthorizedPrincipals(daoId);
       return res.map((p) => (typeof p.toText === 'function' ? p.toText() : p));
     } catch (err) {
