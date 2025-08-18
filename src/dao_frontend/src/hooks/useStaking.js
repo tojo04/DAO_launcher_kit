@@ -8,6 +8,11 @@ export const useStaking = () => {
   const [error, setError] = useState(null);
 
   const stake = async (daoId, amount, period) => {
+    if (!actors?.staking) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -28,6 +33,11 @@ export const useStaking = () => {
   };
 
   const unstake = async (daoId, stakeId) => {
+    if (!actors?.staking) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -46,6 +56,11 @@ export const useStaking = () => {
   };
 
   const claimRewards = async (daoId, stakeId) => {
+    if (!actors?.staking) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -64,6 +79,11 @@ export const useStaking = () => {
   };
 
   const extendStakingPeriod = async (daoId, stakeId, newPeriod) => {
+    if (!actors?.staking) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -84,6 +104,11 @@ export const useStaking = () => {
   };
 
   const getStake = async (daoId, stakeId) => {
+    if (!actors?.staking) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -97,6 +122,11 @@ export const useStaking = () => {
   };
 
   const getStakingRewards = async (daoId, stakeId) => {
+    if (!actors?.staking) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -113,6 +143,11 @@ export const useStaking = () => {
   };
 
   const getStakingStats = async (daoId) => {
+    if (!actors?.staking) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -126,6 +161,11 @@ export const useStaking = () => {
   };
 
   const getUserStakes = async (daoId, user) => {
+    if (!actors?.staking) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -142,6 +182,11 @@ export const useStaking = () => {
   };
 
   const getUserActiveStakes = async (daoId, user) => {
+    if (!actors?.staking) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -158,6 +203,11 @@ export const useStaking = () => {
   };
 
   const getUserStakingSummary = async (daoId, user) => {
+    if (!actors?.staking) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -174,6 +224,11 @@ export const useStaking = () => {
   };
 
   const setMinimumStakeAmount = async (amount) => {
+    if (!actors?.staking) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -189,6 +244,11 @@ export const useStaking = () => {
   };
 
   const setMaximumStakeAmount = async (amount) => {
+    if (!actors?.staking) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -204,6 +264,11 @@ export const useStaking = () => {
   };
 
   const setStakingEnabled = async (enabled) => {
+    if (!actors?.staking) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {

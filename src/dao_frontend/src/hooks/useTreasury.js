@@ -8,6 +8,11 @@ export const useTreasury = () => {
   const [error, setError] = useState(null);
 
   const deposit = async (daoId, amount, description) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -27,6 +32,11 @@ export const useTreasury = () => {
   };
 
   const withdraw = async (daoId, recipient, amount, description) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -48,6 +58,11 @@ export const useTreasury = () => {
   };
 
   const lockTokens = async (daoId, amount, reason) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -66,6 +81,11 @@ export const useTreasury = () => {
   };
 
   const unlockTokens = async (daoId, amount, reason) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -84,6 +104,11 @@ export const useTreasury = () => {
   };
 
   const reserveTokens = async (daoId, amount, reason) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -102,6 +127,11 @@ export const useTreasury = () => {
   };
 
   const releaseReservedTokens = async (daoId, amount, reason) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -120,6 +150,11 @@ export const useTreasury = () => {
   };
 
   const getBalance = async (daoId) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -135,6 +170,11 @@ export const useTreasury = () => {
   };
 
   const getAllTransactions = async (daoId) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -149,6 +189,11 @@ export const useTreasury = () => {
   };
 
   const getTransactionsByType = async (daoId, type) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -165,6 +210,11 @@ export const useTreasury = () => {
   };
 
   const getRecentTransactions = async (daoId, limit) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -182,6 +232,11 @@ export const useTreasury = () => {
   };
 
   const getTreasuryStats = async (daoId) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -196,6 +251,11 @@ export const useTreasury = () => {
   };
 
   const addAuthorizedPrincipal = async (daoId, principalId) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -214,6 +274,11 @@ export const useTreasury = () => {
   };
 
   const removeAuthorizedPrincipal = async (daoId, principalId) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -232,6 +297,11 @@ export const useTreasury = () => {
   };
 
   const getAuthorizedPrincipals = async (daoId) => {
+    if (!actors?.treasury) {
+      const err = new Error("Actors not initialized");
+      setError(err.message);
+      throw err;
+    }
     setLoading(true);
     setError(null);
     try {
