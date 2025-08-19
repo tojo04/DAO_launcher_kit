@@ -29,10 +29,10 @@ export const useDAOOperations = () => {
         
         try {
             // Step 1: Prepare initial admins
-            const initialAdmins = daoConfig.teamMembers
-                .map(member => member.wallet)
-                .filter(wallet => wallet) // Remove empty wallets
-                .map(wallet => Principal.fromText(wallet)); // Convert to Principal
+            const initialAdmins = (daoConfig.teamMembers || [])
+                .map(m => m.wallet)
+                .filter(Boolean)
+                .map(wallet => Principal.fromText(wallet));
             
             let creatorPrincipal = null;
             // Add the creator as an admin if not already included
