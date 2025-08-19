@@ -41,56 +41,44 @@ export const DAOProvider = ({ children }) => {
         setActiveDAO(null);
         return;
       }
-
-      if (!activeDAO?.id) {
-        setUserDAOs([]);
-        setActiveDAO(null);
-        return;
-      }
-      const response = await daoBackend.getAllUsers(activeDAO.id);
       let daos = [];
 
-      if (Array.isArray(response)) {
-        const currentUser = response.find((u) => {
-          try {
-            const id = typeof u.id === 'string' ? u.id : u.id?.toText?.();
-            return id === principal;
-          } catch {
-            return false;
+      if (typeof daoBackend.getUserDAOs === 'function') {
+        try {
+          const response = await daoBackend.getUserDAOs(principal);
+          if (Array.isArray(response)) {
+            daos = response;
           }
-        });
-        if (currentUser && Array.isArray(currentUser.daos)) {
-          daos = currentUser.daos;
-        } else if (!currentUser && response.length && response[0].daos === undefined) {
-          // If the API returns a direct list of DAOs instead of user profiles
-          daos = response;
+        } catch (err) {
+          console.error('Error fetching user DAOs from backend:', err);
+        }
+      }
+
+      if (daos.length === 0 && process.env.NODE_ENV !== 'production') {
+        const launchedDAOs = localStorage.getItem(`daos_${principal}`);
+        if (launchedDAOs) {
+          daos = safeJsonParse(launchedDAOs);
         }
       }
 
       setUserDAOs(daos);
+
       if (daos.length > 0) {
-        setActiveDAO((prev) => prev || daos[0]);
+        const storedActive = localStorage.getItem(`activeDAO_${principal}`);
+        if (storedActive) {
+          setActiveDAO(safeJsonParse(storedActive));
+        } else {
+          const defaultDAO = daos[0];
+          setActiveDAO(defaultDAO);
+          localStorage.setItem(`activeDAO_${principal}`, safeJsonStringify(defaultDAO));
+        }
       } else {
         setActiveDAO(null);
       }
     } catch (error) {
       console.error('Failed to fetch user DAOs:', error);
-      if (process.env.NODE_ENV !== 'production') {
-        const launchedDAOs = localStorage.getItem(`daos_${principal}`);
-        if (launchedDAOs) {
-          const daos = safeJsonParse(launchedDAOs);
-          setUserDAOs(daos);
-          if (daos.length > 0 && !activeDAO) {
-            setActiveDAO(daos[0]);
-          }
-        } else {
-          setUserDAOs([]);
-          setActiveDAO(null);
-        }
-      } else {
-        setUserDAOs([]);
-        setActiveDAO(null);
-      }
+      setUserDAOs([]);
+      setActiveDAO(null);
     } finally {
       setLoading(false);
     }
